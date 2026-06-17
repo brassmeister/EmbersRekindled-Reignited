@@ -5,7 +5,7 @@ Embers is best described as a dwarven magic mod. It features a smattering of mag
 Coming Soon
 
 ## Contact
-You can also talk about Embers Re-Ignited and contact me about the port on my discord in the Embers channel here: https://discord.gg/SthsknG
+You can also talk about Embers Re-Ignited and contact me about the port on my discord @ Rieno
 
 # So about that port
 
