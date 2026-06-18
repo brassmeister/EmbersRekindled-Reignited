@@ -13,7 +13,6 @@ import com.rekindled.embers.datagen.EmbersDamageTypes;
 import com.rekindled.embers.datagen.EmbersBlockTags;
 import com.rekindled.embers.datagen.EmbersItemTags;
 import com.rekindled.embers.datagen.EmbersSounds;
-import com.rekindled.embers.item.ClockworkToolItem;
 import com.rekindled.embers.network.PacketHandler;
 import com.rekindled.embers.network.message.MessageEmberGenOffset;
 import com.rekindled.embers.network.message.MessageWorldSeed;
@@ -43,10 +42,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
@@ -105,14 +102,11 @@ public class EmbersEvents {
 
 	public static void onBlockBreak(BlockEvent.BreakEvent event) {
 		Player player = event.getPlayer();
-		if (player != null && !(player.getMainHandItem().getItem() instanceof ClockworkToolItem)) {
-			if (shouldGrantMiningHeat(event.getState(), event.getLevel(), event.getPos()))
+		if (player != null) {
+			if (event.getState().getDestroySpeed(event.getLevel(), event.getPos()) > 0 || event.getState().is(EmbersBlockTags.EQUIPMENT_MINING_HEAT_SOURCES)) {
 				addHeat(player, player.getMainHandItem(), 1.0f);
+			}
 		}
-	}
-
-	public static boolean shouldGrantMiningHeat(BlockState state, LevelAccessor level, BlockPos pos) {
-		return state.getDestroySpeed(level, pos) > 0 || state.is(EmbersBlockTags.EQUIPMENT_MINING_HEAT_SOURCES);
 	}
 
 	public static void onProjectileFired(EmberProjectileEvent event) {

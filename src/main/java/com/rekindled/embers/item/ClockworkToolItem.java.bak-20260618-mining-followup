@@ -6,7 +6,6 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
-import com.rekindled.embers.EmbersEvents;
 import com.rekindled.embers.api.item.IEmberChargedTool;
 import com.rekindled.embers.particle.GlowParticleOptions;
 import com.rekindled.embers.util.EmberInventoryUtil;
@@ -65,8 +64,6 @@ public class ClockworkToolItem extends DiggerItem implements IEmberChargedTool {
 	@Override
 	public boolean mineBlock(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entityLiving) {
 		ItemData.updateTag(stack, tag -> tag.putBoolean("didUse", true));
-		if (!level.isClientSide() && EmbersEvents.shouldGrantMiningHeat(state, level, pos))
-			EmbersEvents.addHeat(entityLiving, stack, 1.0f);
 		return super.mineBlock(stack, level, state, pos, entityLiving);
 	}
 

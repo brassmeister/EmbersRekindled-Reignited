@@ -17,13 +17,16 @@ import net.minecraft.world.level.Level;
 
 public class AshenArmorItem extends ArmorItem {
 
+	public static final int DURABILITY_MULTIPLIER = 33;
+
 	public AshenArmorItem(Holder<ArmorMaterial> material, Type type, Properties properties) {
 		super(material, type, properties);
 	}
 
 	@Override
 	public void setDamage(ItemStack stack, int damage) {
-		super.setDamage(stack, Math.min(damage, getMaxDamage(stack) - 1));
+		int maxDamage = getMaxDamage(stack);
+		super.setDamage(stack, maxDamage > 0 ? Math.min(damage, maxDamage - 1) : damage);
 	}
 
 	public boolean isBroken(ItemStack armor) {

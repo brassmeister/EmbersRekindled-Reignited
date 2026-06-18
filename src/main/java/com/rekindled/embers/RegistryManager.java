@@ -199,6 +199,7 @@ import com.rekindled.embers.item.AlchemicalNoteItem;
 import com.rekindled.embers.item.AlchemyHintItem;
 import com.rekindled.embers.item.AncientCodexItem;
 import com.rekindled.embers.item.AshenArmorGemItem;
+import com.rekindled.embers.item.AshenArmorItem;
 import com.rekindled.embers.item.BlazingRayItem;
 import com.rekindled.embers.item.CaminiteRingBlockItem;
 import com.rekindled.embers.item.CinderStaffItem;
@@ -579,10 +580,10 @@ public class RegistryManager {
 	public static final CompatRegistryObject<Item> CODEBREAKING_SLATE = ITEMS.register("codebreaking_slate", () -> new CodebreakingSlateItem(new Item.Properties().stacksTo(1)));
 	public static final CompatRegistryObject<Item> TYRFING = ITEMS.register("tyrfing", () -> new TyrfingItem(EmbersTiers.TYRFING, 3, -2.4F, new Item.Properties()));
 	public static final CompatRegistryObject<Item> INFLICTOR_GEM = ITEMS.register("inflictor_gem", () -> new InflictorGemItem(new Item.Properties().stacksTo(1)));
-	public static final CompatRegistryObject<Item> ASHEN_GOGGLES = ITEMS.register("ashen_goggles", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties(), ConfigManager.ASHEN_GOGGLES_SLOTS));
-	public static final CompatRegistryObject<Item> ASHEN_CLOAK = ITEMS.register("ashen_cloak", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new Item.Properties(), ConfigManager.ASHEN_CLOAK_SLOTS));
-	public static final CompatRegistryObject<Item> ASHEN_LEGGINGS = ITEMS.register("ashen_leggings", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new Item.Properties(), ConfigManager.ASHEN_LEGGINGS_SLOTS));
-	public static final CompatRegistryObject<Item> ASHEN_BOOTS = ITEMS.register("ashen_boots", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties(), ConfigManager.ASHEN_BOOTS_SLOTS));
+	public static final CompatRegistryObject<Item> ASHEN_GOGGLES = ITEMS.register("ashen_goggles", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(AshenArmorItem.DURABILITY_MULTIPLIER)), ConfigManager.ASHEN_GOGGLES_SLOTS));
+	public static final CompatRegistryObject<Item> ASHEN_CLOAK = ITEMS.register("ashen_cloak", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new Item.Properties().durability(ArmorItem.Type.CHESTPLATE.getDurability(AshenArmorItem.DURABILITY_MULTIPLIER)), ConfigManager.ASHEN_CLOAK_SLOTS));
+	public static final CompatRegistryObject<Item> ASHEN_LEGGINGS = ITEMS.register("ashen_leggings", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new Item.Properties().durability(ArmorItem.Type.LEGGINGS.getDurability(AshenArmorItem.DURABILITY_MULTIPLIER)), ConfigManager.ASHEN_LEGGINGS_SLOTS));
+	public static final CompatRegistryObject<Item> ASHEN_BOOTS = ITEMS.register("ashen_boots", () -> new AshenArmorGemItem(AshenArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties().durability(ArmorItem.Type.BOOTS.getDurability(AshenArmorItem.DURABILITY_MULTIPLIER)), ConfigManager.ASHEN_BOOTS_SLOTS));
 	public static final CompatRegistryObject<Item> GLIMMER_CRYSTAL = ITEMS.register("glimmer_crystal", () -> new GlimmerCrystalItem(new Item.Properties().durability(800)));
 	public static final CompatRegistryObject<Item> GLIMMER_LAMP = ITEMS.register("glimmer_lamp", () -> new GlimmerLampItem(new Item.Properties().durability(1200)));
 

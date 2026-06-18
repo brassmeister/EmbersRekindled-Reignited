@@ -4,9 +4,11 @@ import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.EmbersAPI;
+import com.rekindled.embers.item.AshenArmorItem;
 import com.rekindled.embers.item.MixedGogglesItem;
 
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -20,7 +22,7 @@ public final class ThrustersCompat {
 	private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Embers.MODID);
 
 	public static final DeferredItem<MixedGogglesItem> PHYSICS_ASHEN_GOGGLES = ITEMS.register("physics_ashen_goggles",
-			() -> new MixedGogglesItem(new Item.Properties(), ConfigManager.ASHEN_GOGGLES_SLOTS));
+			() -> new MixedGogglesItem(new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(AshenArmorItem.DURABILITY_MULTIPLIER)), ConfigManager.ASHEN_GOGGLES_SLOTS));
 
 	private ThrustersCompat() {
 	}

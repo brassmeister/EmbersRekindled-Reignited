@@ -1,5 +1,7 @@
 package com.rekindled.embers.util;
 
+import java.util.function.Consumer;
+
 import javax.annotation.Nullable;
 
 import net.minecraft.core.component.DataComponents;
@@ -57,6 +59,22 @@ public final class ItemData {
 		} else {
 			stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
 		}
+	}
+
+	@SuppressWarnings("deprecation")
+	public static void updateTag(ItemStack stack, Consumer<CompoundTag> updater) {
+		CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+		CompoundTag tag = data == null ? new CompoundTag() : data.getUnsafe().copy();
+		updater.accept(tag);
+		setTag(stack, tag.isEmpty() ? null : tag);
+	}
+
+	public static void updateTagElement(ItemStack stack, String key, Consumer<CompoundTag> updater) {
+		updateTag(stack, tag -> {
+			if (!tag.contains(key))
+				tag.put(key, new CompoundTag());
+			updater.accept(tag.getCompound(key));
+		});
 	}
 
 	public static CompoundTag save(ItemStack stack) {

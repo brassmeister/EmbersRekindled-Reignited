@@ -46,7 +46,7 @@ public class EmberReceiverBlockEntity extends BlockEntity implements IEmberPacke
 		}
 	};
 
-	public static final int TRANSFER_RATE = 10;
+	public static final int TRANSFER_RATE = 32;
 
 	public long ticksExisted = 0;
 	public Random random = new Random();
@@ -76,7 +76,7 @@ public class EmberReceiverBlockEntity extends BlockEntity implements IEmberPacke
 		blockEntity.ticksExisted ++;
 		Direction facing = state.getValue(BlockStateProperties.FACING);
 		BlockEntity attachedTile = SubLevelCompat.findAdjacent(blockEntity, facing.getOpposite());
-		if (blockEntity.ticksExisted % 2 == 0 && attachedTile != null){
+		if (attachedTile != null){
 			IEmberCapability cap = com.rekindled.embers.util.CapabilityCompat.getCapability(attachedTile, EmbersCapabilities.EMBER_CAPABILITY, facing).orElse(null);
 			if (cap != null) {
 				if (cap.getEmber() < cap.getEmberCapacity() && blockEntity.capability.getEmber() > 0){

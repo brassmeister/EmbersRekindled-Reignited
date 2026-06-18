@@ -5,6 +5,7 @@ import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.EmbersAPI;
 import com.rekindled.embers.compat.createthrusters.ThrustersCompat;
+import com.rekindled.embers.item.AshenArmorItem;
 import com.rekindled.embers.item.MixedGogglesItem;
 
 import com.simibubi.create.content.equipment.goggles.GogglesItem;
@@ -12,6 +13,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -45,7 +47,7 @@ public final class CreateCompat {
 					.noOcclusion()));
 	public static final DeferredItem<BlockItem> EMBER_KINETIC_GENERATOR_ITEM = ITEMS.registerSimpleBlockItem(EMBER_KINETIC_GENERATOR);
 	public static final DeferredItem<MixedGogglesItem> ENGINEERS_ASHEN_GOGGLES = ITEMS.register("engineers_ashen_goggles",
-			() -> new MixedGogglesItem(new Item.Properties(), ConfigManager.ASHEN_GOGGLES_SLOTS));
+			() -> new MixedGogglesItem(new Item.Properties().durability(ArmorItem.Type.HELMET.getDurability(AshenArmorItem.DURABILITY_MULTIPLIER)), ConfigManager.ASHEN_GOGGLES_SLOTS));
 	public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EmberKineticGeneratorBlockEntity>> EMBER_KINETIC_GENERATOR_ENTITY =
 			BLOCK_ENTITIES.register("ember_kinetic_generator",
 					() -> BlockEntityType.Builder.of(EmberKineticGeneratorBlockEntity::new, EMBER_KINETIC_GENERATOR.get()).build(null));

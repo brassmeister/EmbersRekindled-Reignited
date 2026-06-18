@@ -65,7 +65,7 @@ public class ClockworkAxeItem extends ClockworkToolItem {
 			if (player != null) {
 				itemstack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
 			}
-			ItemData.getOrCreateTag(itemstack).putBoolean("didUse", true);
+			ItemData.updateTag(itemstack, tag -> tag.putBoolean("didUse", true));
 			return InteractionResult.sidedSuccess(level.isClientSide);
 		} else {
 			return InteractionResult.PASS;

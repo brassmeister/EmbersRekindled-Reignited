@@ -3,7 +3,6 @@ package com.rekindled.embers.util;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.rekindled.embers.RegistryManager;
-import com.rekindled.embers.api.augment.AugmentUtil;
 import com.rekindled.embers.datagen.EmbersSounds;
 import com.rekindled.embers.particle.GlowParticleOptions;
 import com.rekindled.embers.particle.SparkParticleOptions;
@@ -39,10 +38,6 @@ public class SuperHeaterLootModifier extends LootModifier {
 
 	@Override
 	public ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-		ItemStack tool = context.hasParam(LootContextParams.TOOL) ? context.getParam(LootContextParams.TOOL) : ItemStack.EMPTY;
-		if (!AugmentUtil.hasHeat(tool) || AugmentUtil.getAugmentLevel(tool, RegistryManager.SUPERHEATER_AUGMENT) < 1)
-			return generatedLoot;
-
 		Entity user = null;
 		if (context.hasParam(LootContextParams.ATTACKING_ENTITY))
 			user = context.getParam(LootContextParams.ATTACKING_ENTITY);

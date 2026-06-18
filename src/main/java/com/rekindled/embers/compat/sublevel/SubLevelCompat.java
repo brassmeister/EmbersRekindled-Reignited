@@ -1,11 +1,14 @@
 package com.rekindled.embers.compat.sublevel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -16,9 +19,11 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public final class SubLevelCompat {
@@ -142,6 +147,58 @@ public final class SubLevelCompat {
 		}
 		Object subLevel = getSubLevel(level, subLevelId);
 		return subLevel == null ? Vec3.atCenterOf(position) : transformSubLevelPosition(subLevel, Vec3.atCenterOf(position));
+	}
+
+	public static <T extends Entity> List<T> getEntitiesInPhysicalBounds(BlockEntity origin, Class<T> entityClass, AABB localBounds) {
+		if (origin == null || origin.getLevel() == null || entityClass == null || localBounds == null) {
+			return List.of();
+		}
+		AABB physicalBounds = toPhysicalBounds(origin, localBounds);
+		List<T> found = origin.getLevel().getEntitiesOfClass(entityClass, physicalBounds);
+		if (found.size() < 2) {
+			return found;
+		}
+		List<T> unique = new ArrayList<>(found.size());
+		Set<T> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (T entity : found) {
+			if (entity != null && !entity.isRemoved() && seen.add(entity)) {
+				unique.add(entity);
+			}
+		}
+		return unique;
+	}
+
+	public static AABB toPhysicalBounds(BlockEntity origin, AABB localBounds) {
+		if (origin == null || localBounds == null) {
+			return localBounds;
+		}
+		Vec3[] corners = new Vec3[] {
+				new Vec3(localBounds.minX, localBounds.minY, localBounds.minZ),
+				new Vec3(localBounds.minX, localBounds.minY, localBounds.maxZ),
+				new Vec3(localBounds.minX, localBounds.maxY, localBounds.minZ),
+				new Vec3(localBounds.minX, localBounds.maxY, localBounds.maxZ),
+				new Vec3(localBounds.maxX, localBounds.minY, localBounds.minZ),
+				new Vec3(localBounds.maxX, localBounds.minY, localBounds.maxZ),
+				new Vec3(localBounds.maxX, localBounds.maxY, localBounds.minZ),
+				new Vec3(localBounds.maxX, localBounds.maxY, localBounds.maxZ)
+		};
+		Vec3 first = toPhysicalPosition(origin, corners[0]);
+		double minX = first.x;
+		double minY = first.y;
+		double minZ = first.z;
+		double maxX = first.x;
+		double maxY = first.y;
+		double maxZ = first.z;
+		for (int i = 1; i < corners.length; i++) {
+			Vec3 transformed = toPhysicalPosition(origin, corners[i]);
+			minX = Math.min(minX, transformed.x);
+			minY = Math.min(minY, transformed.y);
+			minZ = Math.min(minZ, transformed.z);
+			maxX = Math.max(maxX, transformed.x);
+			maxY = Math.max(maxY, transformed.y);
+			maxZ = Math.max(maxZ, transformed.z);
+		}
+		return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 
 	private static @Nullable Method findMethod(Class<?> owner, String... names) {

@@ -10,7 +10,6 @@ import com.rekindled.embers.api.EmbersAPI;
 import com.rekindled.embers.api.augment.AugmentUtil;
 import com.rekindled.embers.datagen.EmbersSounds;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
@@ -111,11 +110,10 @@ public class WindingGearsAugment extends AugmentBase {
 	public static void setCharge(Level world, ItemStack stack, double charge) {
 		if (world.isClientSide())
 			return;
-		CompoundTag tagCompound = ItemData.getTag(stack);
-		if (tagCompound != null) {
+		ItemData.updateTag(stack, tagCompound -> {
 			tagCompound.putDouble(TAG_CHARGE, charge);
 			tagCompound.putLong(TAG_CHARGE_TIME, world.getGameTime());
-		}
+		});
 	}
 
 	public static void depleteCharge(Level world, ItemStack stack, double charge) {
@@ -126,9 +124,7 @@ public class WindingGearsAugment extends AugmentBase {
 		if (world.isClientSide())
 			return;
 		setCharge(world, stack, Math.min(getMaxCharge(world, stack), getCharge(world, stack) + charge));
-		CompoundTag tagCompound = ItemData.getTag(stack);
-		if (tagCompound != null)
-			tagCompound.putLong(TAG_CHARGE_TIME, world.getGameTime());
+		ItemData.updateTag(stack, tagCompound -> tagCompound.putLong(TAG_CHARGE_TIME, world.getGameTime()));
 	}
 
 	public static float getSpeedBonus(Level world,ItemStack stack) {

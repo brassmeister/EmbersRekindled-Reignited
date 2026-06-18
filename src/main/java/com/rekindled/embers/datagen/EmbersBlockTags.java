@@ -38,6 +38,7 @@ public class EmbersBlockTags extends BlockTagsProvider {
 	public static final TagKey<Block> MECH_CORE_PROXYABLE_TOP = BlockTags.create(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "mech_core_proxyable/top"));
 
 	public static final TagKey<Block> HEAT_SOURCES = BlockTags.create(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "heat_sources"));
+	public static final TagKey<Block> EQUIPMENT_MINING_HEAT_SOURCES = BlockTags.create(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "equipment_mining_heat_sources"));
 
 	public static final TagKey<Block> RESERVOIR_EXPANSION = BlockTags.create(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "reservoir_expansion"));
 	public static final TagKey<Block> RESERVOIR_END = BlockTags.create(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "reservoir_end"));
@@ -339,6 +340,35 @@ public class EmbersBlockTags extends BlockTagsProvider {
 		tag(FLUID_PIPE_CONNECTION_TOGGLEABLE).add(RegistryManager.FLUID_PIPE.get(), RegistryManager.FLUID_EXTRACTOR.get());
 
 		tag(HEAT_SOURCES).add(Blocks.LAVA, Blocks.FIRE);
+		tag(EQUIPMENT_MINING_HEAT_SOURCES)
+				.add(Blocks.STONE, Blocks.GRANITE, Blocks.DIORITE, Blocks.ANDESITE, Blocks.DEEPSLATE, Blocks.TUFF, Blocks.CALCITE,
+						Blocks.DRIPSTONE_BLOCK, Blocks.BASALT, Blocks.SMOOTH_BASALT, Blocks.BLACKSTONE,
+						Blocks.POLISHED_TUFF, Blocks.TUFF_BRICKS, Blocks.CHISELED_TUFF, Blocks.CHISELED_TUFF_BRICKS,
+						Blocks.COPPER_GRATE, Blocks.EXPOSED_COPPER_GRATE, Blocks.WEATHERED_COPPER_GRATE, Blocks.OXIDIZED_COPPER_GRATE,
+						Blocks.WAXED_COPPER_GRATE, Blocks.WAXED_EXPOSED_COPPER_GRATE, Blocks.WAXED_WEATHERED_COPPER_GRATE, Blocks.WAXED_OXIDIZED_COPPER_GRATE,
+						Blocks.COPPER_BULB, Blocks.EXPOSED_COPPER_BULB, Blocks.WEATHERED_COPPER_BULB, Blocks.OXIDIZED_COPPER_BULB,
+						Blocks.WAXED_COPPER_BULB, Blocks.WAXED_EXPOSED_COPPER_BULB, Blocks.WAXED_WEATHERED_COPPER_BULB, Blocks.WAXED_OXIDIZED_COPPER_BULB,
+						Blocks.CHISELED_COPPER, Blocks.EXPOSED_CHISELED_COPPER, Blocks.WEATHERED_CHISELED_COPPER, Blocks.OXIDIZED_CHISELED_COPPER,
+						Blocks.WAXED_CHISELED_COPPER, Blocks.WAXED_EXPOSED_CHISELED_COPPER, Blocks.WAXED_WEATHERED_CHISELED_COPPER, Blocks.WAXED_OXIDIZED_CHISELED_COPPER,
+						Blocks.COPPER_DOOR, Blocks.EXPOSED_COPPER_DOOR, Blocks.WEATHERED_COPPER_DOOR, Blocks.OXIDIZED_COPPER_DOOR,
+						Blocks.WAXED_COPPER_DOOR, Blocks.WAXED_EXPOSED_COPPER_DOOR, Blocks.WAXED_WEATHERED_COPPER_DOOR, Blocks.WAXED_OXIDIZED_COPPER_DOOR,
+						Blocks.COPPER_TRAPDOOR, Blocks.EXPOSED_COPPER_TRAPDOOR, Blocks.WEATHERED_COPPER_TRAPDOOR, Blocks.OXIDIZED_COPPER_TRAPDOOR,
+						Blocks.WAXED_COPPER_TRAPDOOR, Blocks.WAXED_EXPOSED_COPPER_TRAPDOOR, Blocks.WAXED_WEATHERED_COPPER_TRAPDOOR, Blocks.WAXED_OXIDIZED_COPPER_TRAPDOOR,
+						Blocks.TRIAL_SPAWNER, Blocks.VAULT, Blocks.HEAVY_CORE, Blocks.CRAFTER)
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "asurine"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "crimsite"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "limestone"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "ochrum"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "scoria"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "scorchia"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "veridium"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_asurine"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_crimsite"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_limestone"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_ochrum"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_scoria"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_scorchia"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "cut_veridium"));
 
 		tag(EMBER_WRONG_INPUT_HINTER).add(
 				RegistryManager.MELTER.get(),

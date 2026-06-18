@@ -12,10 +12,12 @@ import com.rekindled.embers.api.capabilities.EmbersCapabilities;
 import com.rekindled.embers.api.event.DialInformationEvent;
 import com.rekindled.embers.api.event.EmberEvent;
 import com.rekindled.embers.api.power.IEmberCapability;
+import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
 import com.rekindled.embers.api.tile.IExtraDialInformation;
 import com.rekindled.embers.api.tile.IUpgradeable;
 import com.rekindled.embers.api.upgrades.UpgradeContext;
 import com.rekindled.embers.api.upgrades.UpgradeUtil;
+import com.rekindled.embers.compat.sublevel.SubLevelCompat;
 import com.rekindled.embers.datagen.EmbersSounds;
 import com.rekindled.embers.particle.GlowParticleOptions;
 import com.rekindled.embers.particle.SmokeParticleOptions;
@@ -49,7 +51,7 @@ import net.minecraft.world.phys.Vec3;
 import com.rekindled.embers.compat.legacy.capabilities.Capability;
 import com.rekindled.embers.compat.legacy.LazyOptional;
 
-public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtraDialInformation, ISoundController, IUpgradeable {
+public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtraDialInformation, IExtraCapabilityInformation, ISoundController, IUpgradeable {
 
 	public static double EMBER_COST = 16.0;
 	public static int MAX_LEVEL = 5;
@@ -144,7 +146,7 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 
 		if (blockEntity.progress <= 0) {
 			if (level.getGameTime() % 20 == 1) {
-				List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos.getX(), pos.getY() + 0.25, pos.getZ(), pos.getX() + 1.0, pos.getY() + 1.5, pos.getZ() + 1.0));
+				List<ItemEntity> items = blockEntity.getForgeItems();
 				for (ItemEntity e : items) {
 					e.setExtendedLifetime();
 				}
@@ -234,7 +236,7 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 	}
 
 	private List<ItemEntity> getValidItems() {
-		List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, new AABB(worldPosition.getX(), worldPosition.getY() + 0.25, worldPosition.getZ(), worldPosition.getX() + 1.0, worldPosition.getY() + 1.5, worldPosition.getZ() + 1.0));
+		List<ItemEntity> items = getForgeItems();
 		ItemStack pickedItem = ItemStack.EMPTY;
 		emberValue = 0;
 		for (ItemEntity item : items) {
@@ -256,8 +258,17 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 		return Lists.newArrayList();
 	}
 
+	private List<ItemEntity> getForgeItems() {
+		if (level == null) {
+			return List.of();
+		}
+		AABB localBounds = new AABB(worldPosition.getX() - 1.0, worldPosition.getY() + 0.25, worldPosition.getZ() - 1.0,
+				worldPosition.getX() + 2.0, worldPosition.getY() + 1.5, worldPosition.getZ() + 2.0);
+		return SubLevelCompat.getEntitiesInPhysicalBounds(this, ItemEntity.class, localBounds);
+	}
+
 	public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-		if (!this.isRemoved() && cap == EmbersCapabilities.EMBER_CAPABILITY) {
+		if (!this.isRemoved() && cap == EmbersCapabilities.EMBER_CAPABILITY && (side == null || side == Direction.DOWN)) {
 			return capability.getCapability(cap, side);
 		}
 		return LazyOptional.empty();
@@ -298,6 +309,17 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 	@Override
 	public void addDialInformation(Direction facing, List<Component> information, String dialType) {
 		UpgradeUtil.throwEvent(this, new DialInformationEvent(this, information, dialType), upgrades);
+	}
+
+	@Override
+	public boolean hasCapabilityDescription(Capability<?> capability) {
+		return capability == EmbersCapabilities.EMBER_CAPABILITY;
+	}
+
+	@Override
+	public void addCapabilityDescription(List<Component> strings, Capability<?> capability, Direction facing) {
+		if (capability == EmbersCapabilities.EMBER_CAPABILITY)
+			strings.add(IExtraCapabilityInformation.formatCapability(EnumIOType.INPUT, "embers.tooltip.goggles.ember", null));
 	}
 
 	@Override
