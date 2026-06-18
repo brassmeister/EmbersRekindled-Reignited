@@ -6,7 +6,10 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "CreateBlazeBurnerBlockEntityMixin",
-    "CreateBlazeBurnerBlockInteractionMixin"
+    "CreateBlazeBurnerBlockInteractionMixin",
+    "EmberLinkSubLevelAssemblyMixin",
+    "EmberLinkTargetSubLevelAssemblyMixin",
+    "InfernoForgeSubLevelCollisionMixin"
   ],
   "client": [
     "CTPhysicsGogglesClientUtilMixin"

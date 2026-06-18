@@ -31,6 +31,11 @@ public class EmbersMixinConfigPlugin implements IMixinConfigPlugin {
 				|| "com.rekindled.embers.mixin.CreateBlazeBurnerBlockInteractionMixin".equals(mixinClassName)) {
 			return loadingModList != null && loadingModList.getModFileById("create") != null;
 		}
+		if ("com.rekindled.embers.mixin.InfernoForgeSubLevelCollisionMixin".equals(mixinClassName)
+				|| "com.rekindled.embers.mixin.EmberLinkSubLevelAssemblyMixin".equals(mixinClassName)
+				|| "com.rekindled.embers.mixin.EmberLinkTargetSubLevelAssemblyMixin".equals(mixinClassName)) {
+			return loadingModList != null && loadingModList.getModFileById("sable") != null;
+		}
 		return true;
 	}
 

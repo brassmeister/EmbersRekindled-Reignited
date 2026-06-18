@@ -42,13 +42,13 @@ public class EmberEjectorBlockEntity extends EmberEmitterBlockEntity {
 			}
 		}
 		if ((blockEntity.ticksExisted + blockEntity.offset) % 20 == 0 && blockEntity.canSendBurst() && blockEntity.capability.getEmber() > PULL_RATE) {
-			BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(blockEntity, blockEntity.target, blockEntity.targetSubLevelId);
+			BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(blockEntity, blockEntity.target, blockEntity.targetSubLevelId, blockEntity.targetPhysicalPosition);
 			if (targetTile instanceof IEmberPacketReceiver) {
 				if (((IEmberPacketReceiver) targetTile).hasRoomFor(TRANSFER_RATE)) {
 					EmberPacketEntity packet = RegistryManager.EMBER_PACKET.get().create(blockEntity.level);
 					Vec3 velocity = SubLevelCompat.toPhysicalDirection(blockEntity, getBurstVelocity(facing));
 					Vec3 start = SubLevelCompat.toPhysicalPosition(blockEntity, Vec3.atCenterOf(pos));
-					Vec3 destination = SubLevelCompat.linkedTargetPhysicalPosition(blockEntity, blockEntity.target, blockEntity.targetSubLevelId);
+					Vec3 destination = SubLevelCompat.currentTrackedPhysicalPosition(blockEntity, blockEntity.target, blockEntity.targetSubLevelId, blockEntity.targetPhysicalPosition);
 					packet.initCustom(start, destination, velocity.x, velocity.y, velocity.z, Math.min(TRANSFER_RATE, blockEntity.capability.getEmber()));
 					packet.pos = blockEntity.getBlockPos().immutable();
 					packet.setTrackedTarget(blockEntity.target, blockEntity.targetSubLevelId);

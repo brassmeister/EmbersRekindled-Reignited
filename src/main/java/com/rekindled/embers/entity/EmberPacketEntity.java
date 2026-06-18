@@ -173,7 +173,7 @@ public class EmberPacketEntity extends Entity {
 
 	private Vec3 getCurrentTargetPosition() {
 		if (trackedTarget != null) {
-			Vec3 currentTarget = SubLevelCompat.storedPhysicalPosition(level(), trackedTarget, trackedTargetSubLevelId);
+			Vec3 currentTarget = SubLevelCompat.currentTrackedPhysicalPosition(level(), trackedTarget, trackedTargetSubLevelId, null);
 			dest = BlockPos.containing(currentTarget);
 			return currentTarget;
 		}

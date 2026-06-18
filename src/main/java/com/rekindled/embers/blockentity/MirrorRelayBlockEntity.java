@@ -30,6 +30,8 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 
 	public BlockPos target = null;
 	public UUID targetSubLevelId = null;
+	public UUID targetTrackingPointId = null;
+	public Vec3 targetPhysicalPosition = null;
 	public Random random = new Random();
 	public boolean polled = false;
 	public Vec3 incomingDirection = Vec3.ZERO;
@@ -46,6 +48,8 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 			target = new BlockPos(nbt.getInt("targetX"), nbt.getInt("targetY"), nbt.getInt("targetZ"));
 		}
 		targetSubLevelId = readTargetSubLevelId(nbt);
+		targetTrackingPointId = readUuid(nbt, "targetTrackingPoint");
+		targetPhysicalPosition = readVec3(nbt, "targetPhysicalX", "targetPhysicalY", "targetPhysicalZ");
 		incomingDirection = new Vec3(nbt.getDouble("incomingX"), nbt.getDouble("incomingY"), nbt.getDouble("incomingZ"));
 	}
 
@@ -60,6 +64,10 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 		if (targetSubLevelId != null) {
 			nbt.putString("targetSubLevel", targetSubLevelId.toString());
 		}
+		if (targetTrackingPointId != null) {
+			nbt.putString("targetTrackingPoint", targetTrackingPointId.toString());
+		}
+		writeVec3(nbt, targetPhysicalPosition, "targetPhysicalX", "targetPhysicalY", "targetPhysicalZ");
 		nbt.putDouble("incomingX", incomingDirection.x);
 		nbt.putDouble("incomingY", incomingDirection.y);
 		nbt.putDouble("incomingZ", incomingDirection.z);
@@ -76,6 +84,10 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 		if (targetSubLevelId != null) {
 			nbt.putString("targetSubLevel", targetSubLevelId.toString());
 		}
+		if (targetTrackingPointId != null) {
+			nbt.putString("targetTrackingPoint", targetTrackingPointId.toString());
+		}
+		writeVec3(nbt, targetPhysicalPosition, "targetPhysicalX", "targetPhysicalY", "targetPhysicalZ");
 		nbt.putDouble("incomingX", incomingDirection.x);
 		nbt.putDouble("incomingY", incomingDirection.y);
 		nbt.putDouble("incomingZ", incomingDirection.z);
@@ -94,6 +106,7 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 
 	@Override
 	public boolean hasRoomFor(double ember) {
+		refreshTrackedTarget();
 		if (trajectoryChunks == null) {
 			trajectoryChunks = new HashSet<ChunkPos>();
 			Misc.calculateTrajectoryChunks(trajectoryChunks, worldPosition, target, getEmittingDirection(level.getBlockState(worldPosition).getValue(BlockStateProperties.FACING)));
@@ -101,7 +114,7 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 		if (polled)
 			return target != null;
 		polled = true;
-		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId);
+		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);
 		if (targetTile instanceof IEmberPacketReceiver targetBE) {
 			if (!SubLevelCompat.isInSubLevel(this) && !SubLevelCompat.isInSubLevel(targetTile) && level instanceof ServerLevel serverLevel) {
 				for (ChunkPos chunk : trajectoryChunks) {
@@ -121,11 +134,13 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 
 	@Override
 	public boolean onReceive(EmberPacketEntity packet) {
-		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId);
+		refreshTrackedTarget();
+		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);
 		if (targetTile instanceof IEmberPacketReceiver targetBE && targetBE.hasRoomFor(packet.value) && !getBlockPos().equals(packet.pos)) {
 			Axis axis = level.getBlockState(worldPosition).getValue(BlockStateProperties.FACING).getAxis();
 			packet.setLifetime(78);
-			packet.dest = BlockPos.containing(SubLevelCompat.linkedTargetPhysicalPosition(this, target, targetSubLevelId));
+			Vec3 destination = SubLevelCompat.currentTrackedPhysicalPosition(this, target, targetSubLevelId, targetPhysicalPosition);
+			packet.dest = BlockPos.containing(destination);
 			packet.pos = getBlockPos().immutable();
 			packet.setTrackedTarget(target, targetSubLevelId);
 			setIncomingDirection(packet.getDeltaMovement());
@@ -150,6 +165,8 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 		if (!pos.equals(worldPosition)) {
 			target = pos;
 			targetSubLevelId = null;
+			targetTrackingPointId = null;
+			targetPhysicalPosition = null;
 			this.setChanged();
 		}
 	}
@@ -157,8 +174,11 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 	@Override
 	public void setTargetPosition(BlockPos pos, Direction side, BlockEntity targetEntity) {
 		if (!pos.equals(worldPosition)) {
-			target = pos;
-			targetSubLevelId = SubLevelCompat.getContainingSubLevelId(targetEntity);
+			SubLevelCompat.TrackedPosition trackedPosition = SubLevelCompat.captureTrackedTarget(targetEntity, targetTrackingPointId);
+			target = trackedPosition.position() == null ? pos : trackedPosition.position();
+			targetSubLevelId = trackedPosition.subLevelId();
+			targetTrackingPointId = trackedPosition.trackingPointId();
+			targetPhysicalPosition = trackedPosition.physicalPosition();
 			this.setChanged();
 		}
 	}
@@ -187,13 +207,56 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 	}
 
 	private static UUID readTargetSubLevelId(CompoundTag nbt) {
-		if (!nbt.contains("targetSubLevel")) {
+		return readUuid(nbt, "targetSubLevel");
+	}
+
+	public void refreshTrackedTarget() {
+		SubLevelCompat.TrackedPosition trackedPosition = SubLevelCompat.refreshTrackedTarget(this, target, targetSubLevelId, targetTrackingPointId, targetPhysicalPosition);
+		boolean changed = false;
+		if (!java.util.Objects.equals(target, trackedPosition.position())) {
+			target = trackedPosition.position();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(targetSubLevelId, trackedPosition.subLevelId())) {
+			targetSubLevelId = trackedPosition.subLevelId();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(targetTrackingPointId, trackedPosition.trackingPointId())) {
+			targetTrackingPointId = trackedPosition.trackingPointId();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(targetPhysicalPosition, trackedPosition.physicalPosition())) {
+			targetPhysicalPosition = trackedPosition.physicalPosition();
+			changed = true;
+		}
+		if (changed) {
+			this.setChanged();
+		}
+	}
+
+	private static UUID readUuid(CompoundTag nbt, String key) {
+		if (!nbt.contains(key)) {
 			return null;
 		}
 		try {
-			return UUID.fromString(nbt.getString("targetSubLevel"));
+			return UUID.fromString(nbt.getString(key));
 		} catch (IllegalArgumentException ignored) {
 			return null;
 		}
+	}
+
+	private static Vec3 readVec3(CompoundTag nbt, String xKey, String yKey, String zKey) {
+		return nbt.contains(xKey) && nbt.contains(yKey) && nbt.contains(zKey)
+				? new Vec3(nbt.getDouble(xKey), nbt.getDouble(yKey), nbt.getDouble(zKey))
+				: null;
+	}
+
+	private static void writeVec3(CompoundTag nbt, Vec3 vec, String xKey, String yKey, String zKey) {
+		if (vec == null) {
+			return;
+		}
+		nbt.putDouble(xKey, vec.x);
+		nbt.putDouble(yKey, vec.y);
+		nbt.putDouble(zKey, vec.z);
 	}
 }

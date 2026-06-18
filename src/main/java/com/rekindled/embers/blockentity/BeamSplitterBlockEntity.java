@@ -34,6 +34,10 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 	public BlockPos target2 = null;
 	public UUID target1SubLevelId = null;
 	public UUID target2SubLevelId = null;
+	public UUID target1TrackingPointId = null;
+	public UUID target2TrackingPointId = null;
+	public Vec3 target1PhysicalPosition = null;
+	public Vec3 target2PhysicalPosition = null;
 	public Random random = new Random();
 	public boolean polled = false;
 	public HashSet<ChunkPos> trajectoryChunks1 = null;
@@ -50,10 +54,14 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 			target1 = new BlockPos(nbt.getInt("target1X"), nbt.getInt("target1Y"), nbt.getInt("target1Z"));
 		}
 		target1SubLevelId = readTargetSubLevelId(nbt, "target1SubLevel");
+		target1TrackingPointId = readUuid(nbt, "target1TrackingPoint");
+		target1PhysicalPosition = readVec3(nbt, "target1PhysicalX", "target1PhysicalY", "target1PhysicalZ");
 		if (nbt.contains("target2X")){
 			target2 = new BlockPos(nbt.getInt("target2X"), nbt.getInt("target2Y"), nbt.getInt("target2Z"));
 		}
 		target2SubLevelId = readTargetSubLevelId(nbt, "target2SubLevel");
+		target2TrackingPointId = readUuid(nbt, "target2TrackingPoint");
+		target2PhysicalPosition = readVec3(nbt, "target2PhysicalX", "target2PhysicalY", "target2PhysicalZ");
 	}
 
 	@Override
@@ -67,6 +75,10 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 		if (target1SubLevelId != null) {
 			nbt.putString("target1SubLevel", target1SubLevelId.toString());
 		}
+		if (target1TrackingPointId != null) {
+			nbt.putString("target1TrackingPoint", target1TrackingPointId.toString());
+		}
+		writeVec3(nbt, target1PhysicalPosition, "target1PhysicalX", "target1PhysicalY", "target1PhysicalZ");
 		if (target2 != null){
 			nbt.putInt("target2X", target2.getX());
 			nbt.putInt("target2Y", target2.getY());
@@ -75,6 +87,10 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 		if (target2SubLevelId != null) {
 			nbt.putString("target2SubLevel", target2SubLevelId.toString());
 		}
+		if (target2TrackingPointId != null) {
+			nbt.putString("target2TrackingPoint", target2TrackingPointId.toString());
+		}
+		writeVec3(nbt, target2PhysicalPosition, "target2PhysicalX", "target2PhysicalY", "target2PhysicalZ");
 	}
 
 	@Override
@@ -88,6 +104,10 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 		if (target1SubLevelId != null) {
 			nbt.putString("target1SubLevel", target1SubLevelId.toString());
 		}
+		if (target1TrackingPointId != null) {
+			nbt.putString("target1TrackingPoint", target1TrackingPointId.toString());
+		}
+		writeVec3(nbt, target1PhysicalPosition, "target1PhysicalX", "target1PhysicalY", "target1PhysicalZ");
 		if (target2 != null){
 			nbt.putInt("target2X", target2.getX());
 			nbt.putInt("target2Y", target2.getY());
@@ -96,6 +116,10 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 		if (target2SubLevelId != null) {
 			nbt.putString("target2SubLevel", target2SubLevelId.toString());
 		}
+		if (target2TrackingPointId != null) {
+			nbt.putString("target2TrackingPoint", target2TrackingPointId.toString());
+		}
+		writeVec3(nbt, target2PhysicalPosition, "target2PhysicalX", "target2PhysicalY", "target2PhysicalZ");
 		return nbt;
 	}
 
@@ -117,6 +141,7 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 
 	@Override
 	public boolean hasRoomFor(double ember) {
+		refreshTrackedTargets();
 		if (trajectoryChunks1 == null || trajectoryChunks2 == null) {
 			Axis axis = level.getBlockState(worldPosition).getValue(BlockStateProperties.AXIS);
 			trajectoryChunks1 = new HashSet<ChunkPos>();
@@ -128,15 +153,15 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 			return false;
 		polled = true;
 
-		if (hasRoomTarget(target1, target1SubLevelId, trajectoryChunks1, ember / 2.0) && hasRoomTarget(target2, target2SubLevelId, trajectoryChunks2, ember / 2.0)) {
+		if (hasRoomTarget(target1, target1SubLevelId, target1PhysicalPosition, trajectoryChunks1, ember / 2.0) && hasRoomTarget(target2, target2SubLevelId, target2PhysicalPosition, trajectoryChunks2, ember / 2.0)) {
 			polled = false;
 			return true;
 		}
-		if (hasRoomTarget(target1, target1SubLevelId, trajectoryChunks1, ember)) {
+		if (hasRoomTarget(target1, target1SubLevelId, target1PhysicalPosition, trajectoryChunks1, ember)) {
 			polled = false;
 			return true;
 		}
-		if (hasRoomTarget(target2, target2SubLevelId, trajectoryChunks2, ember)) {
+		if (hasRoomTarget(target2, target2SubLevelId, target2PhysicalPosition, trajectoryChunks2, ember)) {
 			polled = false;
 			return true;
 		}
@@ -144,8 +169,8 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 		return false;
 	}
 
-	public boolean hasRoomTarget(BlockPos target, UUID targetSubLevelId, HashSet<ChunkPos> trajectoryChunks, double ember) {
-		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId);
+	public boolean hasRoomTarget(BlockPos target, UUID targetSubLevelId, Vec3 targetPhysicalPosition, HashSet<ChunkPos> trajectoryChunks, double ember) {
+		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);
 		if (targetTile instanceof IEmberPacketReceiver targetBE) {
 			if (!SubLevelCompat.isInSubLevel(this) && !SubLevelCompat.isInSubLevel(targetTile) && level instanceof ServerLevel serverLevel) {
 				for (ChunkPos chunk : trajectoryChunks) {
@@ -172,6 +197,7 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 	}
 
 	public void split(double ember) {
+		refreshTrackedTargets();
 		if ((target1 != null || target2 != null) && ember > 0.1) {
 			Axis axis = level.getBlockState(worldPosition).getValue(BlockStateProperties.AXIS);
 			if (trajectoryChunks1 == null || trajectoryChunks2 == null) {
@@ -180,8 +206,8 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 				Misc.calculateTrajectoryChunks(trajectoryChunks1, worldPosition, target1, EmberEmitterBlockEntity.getBurstVelocity(Direction.get(AxisDirection.POSITIVE, axis)));
 				Misc.calculateTrajectoryChunks(trajectoryChunks2, worldPosition, target2, EmberEmitterBlockEntity.getBurstVelocity(Direction.get(AxisDirection.NEGATIVE, axis)));
 			}
-			boolean room1 = target1 != null && hasRoomTarget(target1, target1SubLevelId, trajectoryChunks1, ember / 2.0);
-			boolean room2 = target2 != null && hasRoomTarget(target2, target2SubLevelId, trajectoryChunks2, ember / 2.0);
+			boolean room1 = target1 != null && hasRoomTarget(target1, target1SubLevelId, target1PhysicalPosition, trajectoryChunks1, ember / 2.0);
+			boolean room2 = target2 != null && hasRoomTarget(target2, target2SubLevelId, target2PhysicalPosition, trajectoryChunks2, ember / 2.0);
 			if (!room1 && !room2) {
 				return;
 			}
@@ -191,7 +217,7 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 				EmberPacketEntity packet1 = RegistryManager.EMBER_PACKET.get().create(level);
 				Vec3 velocity1 = SubLevelCompat.toPhysicalDirection(this, EmberEmitterBlockEntity.getBurstVelocity(Direction.get(AxisDirection.POSITIVE, axis)));
 				Vec3 start = SubLevelCompat.toPhysicalPosition(this, Vec3.atCenterOf(worldPosition));
-				Vec3 destination = target1 == null ? start : SubLevelCompat.linkedTargetPhysicalPosition(this, target1, target1SubLevelId);
+				Vec3 destination = target1 == null ? start : SubLevelCompat.currentTrackedPhysicalPosition(this, target1, target1SubLevelId, target1PhysicalPosition);
 				packet1.initCustom(start, destination, velocity1.x, velocity1.y, velocity1.z, value);
 				packet1.pos = getBlockPos().immutable();
 				packet1.setTrackedTarget(target1, target1SubLevelId);
@@ -201,7 +227,7 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 				EmberPacketEntity packet2 = RegistryManager.EMBER_PACKET.get().create(level);
 				Vec3 velocity2 = SubLevelCompat.toPhysicalDirection(this, EmberEmitterBlockEntity.getBurstVelocity(Direction.get(AxisDirection.NEGATIVE, axis)));
 				Vec3 start = SubLevelCompat.toPhysicalPosition(this, Vec3.atCenterOf(worldPosition));
-				Vec3 destination = target2 == null ? start : SubLevelCompat.linkedTargetPhysicalPosition(this, target2, target2SubLevelId);
+				Vec3 destination = target2 == null ? start : SubLevelCompat.currentTrackedPhysicalPosition(this, target2, target2SubLevelId, target2PhysicalPosition);
 				packet2.initCustom(start, destination, velocity2.x, velocity2.y, velocity2.z, value);
 				packet2.pos = getBlockPos().immutable();
 				packet2.setTrackedTarget(target2, target2SubLevelId);
@@ -217,9 +243,13 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 			if (side.getAxisDirection() == AxisDirection.POSITIVE) {
 				target1 = pos;
 				target1SubLevelId = null;
+				target1TrackingPointId = null;
+				target1PhysicalPosition = null;
 			} else {
 				target2 = pos;
 				target2SubLevelId = null;
+				target2TrackingPointId = null;
+				target2PhysicalPosition = null;
 			}
 			this.setChanged();
 		}
@@ -228,12 +258,18 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 	@Override
 	public void setTargetPosition(BlockPos pos, Direction side, BlockEntity targetEntity) {
 		if (!pos.equals(worldPosition) && side.getAxis() == level.getBlockState(worldPosition).getValue(BlockStateProperties.AXIS)) {
+			SubLevelCompat.TrackedPosition trackedPosition = SubLevelCompat.captureTrackedTarget(targetEntity,
+					side.getAxisDirection() == AxisDirection.POSITIVE ? target1TrackingPointId : target2TrackingPointId);
 			if (side.getAxisDirection() == AxisDirection.POSITIVE) {
-				target1 = pos;
-				target1SubLevelId = SubLevelCompat.getContainingSubLevelId(targetEntity);
+				target1 = trackedPosition.position() == null ? pos : trackedPosition.position();
+				target1SubLevelId = trackedPosition.subLevelId();
+				target1TrackingPointId = trackedPosition.trackingPointId();
+				target1PhysicalPosition = trackedPosition.physicalPosition();
 			} else {
-				target2 = pos;
-				target2SubLevelId = SubLevelCompat.getContainingSubLevelId(targetEntity);
+				target2 = trackedPosition.position() == null ? pos : trackedPosition.position();
+				target2SubLevelId = trackedPosition.subLevelId();
+				target2TrackingPointId = trackedPosition.trackingPointId();
+				target2PhysicalPosition = trackedPosition.physicalPosition();
 			}
 			this.setChanged();
 		}
@@ -268,6 +304,60 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 	}
 
 	private static UUID readTargetSubLevelId(CompoundTag nbt, String key) {
+		return readUuid(nbt, key);
+	}
+
+	public void refreshTrackedTargets() {
+		SubLevelCompat.TrackedPosition tracked1 = SubLevelCompat.refreshTrackedTarget(this, target1, target1SubLevelId, target1TrackingPointId, target1PhysicalPosition);
+		SubLevelCompat.TrackedPosition tracked2 = SubLevelCompat.refreshTrackedTarget(this, target2, target2SubLevelId, target2TrackingPointId, target2PhysicalPosition);
+		boolean changed = applyTrackedTarget(1, tracked1);
+		changed |= applyTrackedTarget(2, tracked2);
+		if (changed) {
+			this.setChanged();
+		}
+	}
+
+	private boolean applyTrackedTarget(int targetIndex, SubLevelCompat.TrackedPosition trackedPosition) {
+		boolean changed = false;
+		if (targetIndex == 1) {
+			if (!java.util.Objects.equals(target1, trackedPosition.position())) {
+				target1 = trackedPosition.position();
+				changed = true;
+			}
+			if (!java.util.Objects.equals(target1SubLevelId, trackedPosition.subLevelId())) {
+				target1SubLevelId = trackedPosition.subLevelId();
+				changed = true;
+			}
+			if (!java.util.Objects.equals(target1TrackingPointId, trackedPosition.trackingPointId())) {
+				target1TrackingPointId = trackedPosition.trackingPointId();
+				changed = true;
+			}
+			if (!java.util.Objects.equals(target1PhysicalPosition, trackedPosition.physicalPosition())) {
+				target1PhysicalPosition = trackedPosition.physicalPosition();
+				changed = true;
+			}
+			return changed;
+		}
+		if (!java.util.Objects.equals(target2, trackedPosition.position())) {
+			target2 = trackedPosition.position();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(target2SubLevelId, trackedPosition.subLevelId())) {
+			target2SubLevelId = trackedPosition.subLevelId();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(target2TrackingPointId, trackedPosition.trackingPointId())) {
+			target2TrackingPointId = trackedPosition.trackingPointId();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(target2PhysicalPosition, trackedPosition.physicalPosition())) {
+			target2PhysicalPosition = trackedPosition.physicalPosition();
+			changed = true;
+		}
+		return changed;
+	}
+
+	private static UUID readUuid(CompoundTag nbt, String key) {
 		if (!nbt.contains(key)) {
 			return null;
 		}
@@ -276,5 +366,20 @@ public class BeamSplitterBlockEntity extends BlockEntity implements IEmberPacket
 		} catch (IllegalArgumentException ignored) {
 			return null;
 		}
+	}
+
+	private static Vec3 readVec3(CompoundTag nbt, String xKey, String yKey, String zKey) {
+		return nbt.contains(xKey) && nbt.contains(yKey) && nbt.contains(zKey)
+				? new Vec3(nbt.getDouble(xKey), nbt.getDouble(yKey), nbt.getDouble(zKey))
+				: null;
+	}
+
+	private static void writeVec3(CompoundTag nbt, Vec3 vec, String xKey, String yKey, String zKey) {
+		if (vec == null) {
+			return;
+		}
+		nbt.putDouble(xKey, vec.x);
+		nbt.putDouble(yKey, vec.y);
+		nbt.putDouble(zKey, vec.z);
 	}
 }

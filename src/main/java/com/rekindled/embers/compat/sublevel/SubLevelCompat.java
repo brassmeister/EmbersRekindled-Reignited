@@ -3,6 +3,8 @@ package com.rekindled.embers.compat.sublevel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Collection;
+import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,13 +18,23 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3d;
+
+import com.rekindled.embers.api.power.IEmberPacketReceiver;
+import com.rekindled.embers.blockentity.BeamSplitterBlockEntity;
+import com.rekindled.embers.blockentity.EmberEmitterBlockEntity;
+import com.rekindled.embers.blockentity.EmberRelayBlockEntity;
+import com.rekindled.embers.blockentity.MirrorRelayBlockEntity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -36,6 +48,17 @@ public final class SubLevelCompat {
 	private static Method transformNormal;
 	private static Method transformNormalInverse;
 	private static Class<?> subLevelContainerClass;
+	private static Class<?> trackingPointClass;
+	private static Method getTrackingPointData;
+	private static Method getTrackingPoint;
+	private static Method setTrackingPoint;
+	private static Method inSubLevel;
+	private static Method subLevelID;
+	private static Method point;
+	private static Method globalPlaceholderPosition;
+	private static Method getLastSerializationPointer;
+	private static Constructor<?> trackingPointConstructor;
+	private static final Map<BlockPos, UUID> movingEmberLinkTargets = new HashMap<>();
 	private static boolean initialized;
 
 	private SubLevelCompat() {
@@ -62,7 +85,35 @@ public final class SubLevelCompat {
 			transformNormalInverse = findMethod(logicalPose.getReturnType(), "transformNormalInverse", "transformDirectionInverse", "inverseTransformNormal", "inverseTransformDirection");
 		} catch (ReflectiveOperationException ignored) {
 			helper = null;
+			return;
 		}
+		try {
+			Class<?> trackingData = Class.forName("dev.ryanhcode.sable.sublevel.tracking_points.SubLevelTrackingPointSavedData");
+			trackingPointClass = Class.forName("dev.ryanhcode.sable.sublevel.tracking_points.TrackingPoint");
+			getTrackingPointData = trackingData.getMethod("getOrLoad", ServerLevel.class);
+			getTrackingPoint = trackingData.getMethod("getTrackingPoint", UUID.class);
+			setTrackingPoint = trackingData.getMethod("setTrackingPoint", UUID.class, trackingPointClass);
+			inSubLevel = trackingPointClass.getMethod("inSubLevel");
+			subLevelID = trackingPointClass.getMethod("subLevelID");
+			point = trackingPointClass.getMethod("point");
+			globalPlaceholderPosition = trackingPointClass.getMethod("globalPlaceholderPosition");
+			Class<?> savedPointer = Class.forName("dev.ryanhcode.sable.sublevel.storage.holding.GlobalSavedSubLevelPointer");
+			trackingPointConstructor = trackingPointClass.getConstructor(boolean.class, UUID.class, savedPointer, Vector3d.class, Vector3d.class);
+		} catch (ReflectiveOperationException ignored) {
+			trackingPointClass = null;
+			getTrackingPointData = null;
+			getTrackingPoint = null;
+			setTrackingPoint = null;
+			inSubLevel = null;
+			subLevelID = null;
+			point = null;
+			globalPlaceholderPosition = null;
+			getLastSerializationPointer = null;
+			trackingPointConstructor = null;
+		}
+	}
+
+	public record TrackedPosition(@Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable UUID trackingPointId, @Nullable Vec3 physicalPosition) {
 	}
 
 	public static @Nullable UUID getContainingSubLevelId(BlockEntity blockEntity) {
@@ -96,17 +147,28 @@ public final class SubLevelCompat {
 	}
 
 	public static @Nullable BlockEntity findReachableLinkedTarget(BlockEntity origin, @Nullable BlockPos targetPosition, @Nullable UUID targetSubLevelId) {
+		return findReachableLinkedTarget(origin, targetPosition, targetSubLevelId, null);
+	}
+
+	public static @Nullable BlockEntity findReachableLinkedTarget(BlockEntity origin, @Nullable BlockPos targetPosition, @Nullable UUID targetSubLevelId, @Nullable Vec3 targetPhysicalPosition) {
 		BlockEntity target = findLinkedTarget(origin, targetPosition, targetSubLevelId);
+		if (target == null && origin != null && origin.getLevel() != null && targetPhysicalPosition != null) {
+			target = findAtPhysicalPosition(origin.getLevel(), targetPhysicalPosition);
+		}
 		if (target == null || origin == null || origin.getLevel() == null || targetPosition == null) {
 			return null;
 		}
-		if (!targetPosition.equals(target.getBlockPos()) || !Objects.equals(targetSubLevelId, getContainingSubLevelId(target))) {
-			return null;
+		UUID actualSubLevelId = getContainingSubLevelId(target);
+		if (targetPosition.equals(target.getBlockPos()) && Objects.equals(targetSubLevelId, actualSubLevelId)) {
+			return target;
 		}
-		Vec3 physicalPosition = linkedTargetPhysicalPosition(origin, targetPosition, targetSubLevelId);
+		Vec3 physicalPosition = targetPhysicalPosition != null ? targetPhysicalPosition : linkedTargetPhysicalPosition(origin, targetPosition, targetSubLevelId);
 		BlockEntity reachableTarget = findAtPhysicalPosition(origin.getLevel(), physicalPosition);
 		if (reachableTarget == null) {
 			return null;
+		}
+		if (reachableTarget == target) {
+			return target;
 		}
 		return targetPosition.equals(reachableTarget.getBlockPos()) && Objects.equals(targetSubLevelId, getContainingSubLevelId(reachableTarget))
 				? target
@@ -147,6 +209,242 @@ public final class SubLevelCompat {
 		}
 		Object subLevel = getSubLevel(level, subLevelId);
 		return subLevel == null ? Vec3.atCenterOf(position) : transformSubLevelPosition(subLevel, Vec3.atCenterOf(position));
+	}
+
+	public static Vec3 currentTrackedPhysicalPosition(BlockEntity origin, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable Vec3 fallbackPhysicalPosition) {
+		return currentTrackedPhysicalPosition(origin == null ? null : origin.getLevel(), origin, position, subLevelId, fallbackPhysicalPosition);
+	}
+
+	public static Vec3 currentTrackedPhysicalPosition(Level level, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable Vec3 fallbackPhysicalPosition) {
+		return currentTrackedPhysicalPosition(level, null, position, subLevelId, fallbackPhysicalPosition);
+	}
+
+	private static Vec3 currentTrackedPhysicalPosition(@Nullable Level level, @Nullable BlockEntity origin, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable Vec3 fallbackPhysicalPosition) {
+		if (position == null) {
+			return origin == null ? Vec3.ZERO : Vec3.atCenterOf(origin.getBlockPos());
+		}
+		if (level != null && subLevelId != null) {
+			Object subLevel = getSubLevel(level, subLevelId);
+			if (subLevel != null) {
+				return transformSubLevelPosition(subLevel, Vec3.atCenterOf(position));
+			}
+		}
+		return fallbackPhysicalPosition != null ? fallbackPhysicalPosition : linkedTargetPhysicalPosition(origin, position, subLevelId);
+	}
+
+	public static TrackedPosition captureTrackedTarget(BlockEntity targetEntity, @Nullable UUID existingTrackingPointId) {
+		if (targetEntity == null) {
+			return new TrackedPosition(null, null, null, null);
+		}
+		BlockPos position = targetEntity.getBlockPos().immutable();
+		UUID subLevelId = getContainingSubLevelId(targetEntity);
+		Vec3 physicalPosition = toPhysicalPosition(targetEntity, Vec3.atCenterOf(position));
+		UUID trackingPointId = writeTrackingPoint(targetEntity.getLevel(), existingTrackingPointId, position, subLevelId, physicalPosition);
+		return new TrackedPosition(position, subLevelId, trackingPointId, physicalPosition);
+	}
+
+	public static TrackedPosition refreshTrackedTarget(Level level, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable UUID trackingPointId, @Nullable Vec3 physicalPosition) {
+		if (trackingPointId != null && level instanceof ServerLevel serverLevel) {
+			TrackedPosition tracked = readTrackingPoint(serverLevel, trackingPointId);
+			if (tracked.position() != null) {
+				return tracked;
+			}
+			UUID recreated = writeTrackingPoint(level, trackingPointId, position, subLevelId, physicalPosition);
+			if (recreated != null) {
+				return new TrackedPosition(position, subLevelId, recreated, physicalPosition);
+			}
+		}
+		if (position == null) {
+			return new TrackedPosition(null, null, trackingPointId, physicalPosition);
+		}
+		Vec3 nextPhysical = physicalPosition != null ? physicalPosition : storedPhysicalPosition(level, position, subLevelId);
+		UUID nextTrackingPointId = writeTrackingPoint(level, trackingPointId, position, subLevelId, nextPhysical);
+		return new TrackedPosition(position, subLevelId, nextTrackingPointId, nextPhysical);
+	}
+
+	public static TrackedPosition refreshTrackedTarget(BlockEntity owner, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable UUID trackingPointId, @Nullable Vec3 physicalPosition) {
+		if (owner == null || owner.getLevel() == null) {
+			return new TrackedPosition(position, subLevelId, trackingPointId, physicalPosition);
+		}
+		if (trackingPointId != null && owner.getLevel() instanceof ServerLevel serverLevel) {
+			TrackedPosition tracked = readTrackingPoint(serverLevel, trackingPointId);
+			if (tracked.position() != null) {
+				return tracked;
+			}
+		}
+		BlockEntity target = resolveTrackedTargetOwnerPosition(owner, position, subLevelId, physicalPosition);
+		if (target != null) {
+			return captureTrackedTarget(target, trackingPointId);
+		}
+		return refreshTrackedTarget(owner.getLevel(), position, subLevelId, trackingPointId, physicalPosition);
+	}
+
+	public static void rememberMovingEmberLinkTarget(BlockEntity target) {
+		if (target instanceof IEmberPacketReceiver) {
+			movingEmberLinkTargets.put(target.getBlockPos().immutable(), getContainingSubLevelId(target));
+		}
+	}
+
+	public static void reconnectMovedEmberLinks(ServerLevel level, BlockPos oldPosition, BlockEntity movedTarget) {
+		if (level == null || oldPosition == null || !(movedTarget instanceof IEmberPacketReceiver)) {
+			return;
+		}
+		UUID oldSubLevelId = movingEmberLinkTargets.remove(oldPosition);
+		for (BlockEntity owner : getLoadedBlockEntitiesIncludingSubLevels(level)) {
+			if (owner instanceof EmberEmitterBlockEntity emitter) {
+				reconnectEmitter(emitter, oldPosition, oldSubLevelId, movedTarget);
+			} else if (owner instanceof EmberRelayBlockEntity relay) {
+				reconnectRelay(relay, oldPosition, oldSubLevelId, movedTarget);
+			} else if (owner instanceof MirrorRelayBlockEntity relay) {
+				reconnectMirrorRelay(relay, oldPosition, oldSubLevelId, movedTarget);
+			} else if (owner instanceof BeamSplitterBlockEntity splitter) {
+				reconnectBeamSplitter(splitter, oldPosition, oldSubLevelId, movedTarget);
+			}
+		}
+	}
+
+	private static void reconnectEmitter(EmberEmitterBlockEntity emitter, BlockPos oldPosition, @Nullable UUID oldSubLevelId, BlockEntity movedTarget) {
+		if (!sameStoredTarget(emitter.target, emitter.targetSubLevelId, oldPosition, oldSubLevelId)) {
+			return;
+		}
+		TrackedPosition tracked = captureTrackedTarget(movedTarget, emitter.targetTrackingPointId);
+		emitter.target = tracked.position();
+		emitter.targetSubLevelId = tracked.subLevelId();
+		emitter.targetTrackingPointId = tracked.trackingPointId();
+		emitter.targetPhysicalPosition = tracked.physicalPosition();
+		emitter.setChanged();
+	}
+
+	private static void reconnectRelay(EmberRelayBlockEntity relay, BlockPos oldPosition, @Nullable UUID oldSubLevelId, BlockEntity movedTarget) {
+		if (!sameStoredTarget(relay.target, relay.targetSubLevelId, oldPosition, oldSubLevelId)) {
+			return;
+		}
+		TrackedPosition tracked = captureTrackedTarget(movedTarget, relay.targetTrackingPointId);
+		relay.target = tracked.position();
+		relay.targetSubLevelId = tracked.subLevelId();
+		relay.targetTrackingPointId = tracked.trackingPointId();
+		relay.targetPhysicalPosition = tracked.physicalPosition();
+		relay.setChanged();
+	}
+
+	private static void reconnectMirrorRelay(MirrorRelayBlockEntity relay, BlockPos oldPosition, @Nullable UUID oldSubLevelId, BlockEntity movedTarget) {
+		if (!sameStoredTarget(relay.target, relay.targetSubLevelId, oldPosition, oldSubLevelId)) {
+			return;
+		}
+		TrackedPosition tracked = captureTrackedTarget(movedTarget, relay.targetTrackingPointId);
+		relay.target = tracked.position();
+		relay.targetSubLevelId = tracked.subLevelId();
+		relay.targetTrackingPointId = tracked.trackingPointId();
+		relay.targetPhysicalPosition = tracked.physicalPosition();
+		relay.setChanged();
+	}
+
+	private static void reconnectBeamSplitter(BeamSplitterBlockEntity splitter, BlockPos oldPosition, @Nullable UUID oldSubLevelId, BlockEntity movedTarget) {
+		boolean changed = false;
+		if (sameStoredTarget(splitter.target1, splitter.target1SubLevelId, oldPosition, oldSubLevelId)) {
+			TrackedPosition tracked = captureTrackedTarget(movedTarget, splitter.target1TrackingPointId);
+			splitter.target1 = tracked.position();
+			splitter.target1SubLevelId = tracked.subLevelId();
+			splitter.target1TrackingPointId = tracked.trackingPointId();
+			splitter.target1PhysicalPosition = tracked.physicalPosition();
+			changed = true;
+		}
+		if (sameStoredTarget(splitter.target2, splitter.target2SubLevelId, oldPosition, oldSubLevelId)) {
+			TrackedPosition tracked = captureTrackedTarget(movedTarget, splitter.target2TrackingPointId);
+			splitter.target2 = tracked.position();
+			splitter.target2SubLevelId = tracked.subLevelId();
+			splitter.target2TrackingPointId = tracked.trackingPointId();
+			splitter.target2PhysicalPosition = tracked.physicalPosition();
+			changed = true;
+		}
+		if (changed) {
+			splitter.setChanged();
+		}
+	}
+
+	private static boolean sameStoredTarget(@Nullable BlockPos target, @Nullable UUID subLevelId, BlockPos oldPosition, @Nullable UUID oldSubLevelId) {
+		return oldPosition.equals(target) && Objects.equals(subLevelId, oldSubLevelId);
+	}
+
+	private static List<BlockEntity> getLoadedBlockEntitiesIncludingSubLevels(ServerLevel level) {
+		Map<BlockPos, BlockEntity> blockEntities = new LinkedHashMap<>();
+		for (BlockEntity blockEntity : getLoadedLevelBlockEntities(level)) {
+			if (blockEntity != null && !blockEntity.isRemoved()) {
+				blockEntities.put(blockEntity.getBlockPos().immutable(), blockEntity);
+			}
+		}
+		for (Object subLevel : getAllSubLevels(level)) {
+			for (BlockEntity blockEntity : getBlockEntities(subLevel)) {
+				if (blockEntity != null && !blockEntity.isRemoved()) {
+					blockEntities.putIfAbsent(blockEntity.getBlockPos().immutable(), blockEntity);
+				}
+			}
+		}
+		return new ArrayList<>(blockEntities.values());
+	}
+
+	private static List<BlockEntity> getLoadedLevelBlockEntities(ServerLevel level) {
+		List<BlockEntity> blockEntities = new ArrayList<>();
+		try {
+			Object chunkMap = level.getChunkSource().chunkMap;
+			Method getChunksMethod = chunkMap.getClass().getDeclaredMethod("getChunks");
+			getChunksMethod.setAccessible(true);
+			Object chunksObject = getChunksMethod.invoke(chunkMap);
+			if (!(chunksObject instanceof Iterable<?> chunks)) {
+				return blockEntities;
+			}
+			for (Object holderObject : chunks) {
+				if (!(holderObject instanceof ChunkHolder holder)) {
+					continue;
+				}
+				LevelChunk chunk = holder.getTickingChunk();
+				if (chunk != null) {
+					blockEntities.addAll(chunk.getBlockEntities().values());
+				}
+			}
+		} catch (ReflectiveOperationException | RuntimeException ignored) {
+		}
+		return blockEntities;
+	}
+
+	private static List<Object> getAllSubLevels(Level level) {
+		init();
+		if (subLevelContainerClass == null) {
+			return List.of();
+		}
+		try {
+			Object container = getContainer(level);
+			if (container == null) {
+				return List.of();
+			}
+			Object subLevels = container.getClass().getMethod("getAllSubLevels").invoke(container);
+			if (!(subLevels instanceof Iterable<?> iterable)) {
+				return List.of();
+			}
+			List<Object> result = new ArrayList<>();
+			for (Object subLevel : iterable) {
+				result.add(subLevel);
+			}
+			return result;
+		} catch (ReflectiveOperationException | RuntimeException ignored) {
+			return List.of();
+		}
+	}
+
+	private static @Nullable BlockEntity resolveTrackedTargetOwnerPosition(BlockEntity owner, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable Vec3 physicalPosition) {
+		if (position == null || owner == null || owner.getLevel() == null) {
+			return null;
+		}
+		if (subLevelId != null) {
+			BlockEntity target = findStoredPosition(owner.getLevel(), position, subLevelId);
+			return target != null ? target : findAtPhysicalPosition(owner.getLevel(), physicalPosition);
+		}
+		BlockEntity target = isInSubLevel(owner) ? findAtPhysicalPosition(owner, position) : null;
+		if (target != null) {
+			return target;
+		}
+		target = findStoredPosition(owner.getLevel(), position, null);
+		return target != null ? target : findAtPhysicalPosition(owner.getLevel(), physicalPosition);
 	}
 
 	public static <T extends Entity> List<T> getEntitiesInPhysicalBounds(BlockEntity origin, Class<T> entityClass, AABB localBounds) {
@@ -394,6 +692,71 @@ public final class SubLevelCompat {
 			return transformed instanceof Vec3 vec ? vec : localPosition;
 		} catch (ReflectiveOperationException | RuntimeException ignored) {
 			return localPosition;
+		}
+	}
+
+	private static @Nullable UUID writeTrackingPoint(@Nullable Level level, @Nullable UUID trackingPointId, @Nullable BlockPos position, @Nullable UUID subLevelId, @Nullable Vec3 physicalPosition) {
+		if (!(level instanceof ServerLevel serverLevel) || position == null) {
+			return trackingPointId;
+		}
+		init();
+		if (getTrackingPointData == null || setTrackingPoint == null || trackingPointConstructor == null) {
+			return trackingPointId;
+		}
+		try {
+			UUID id = trackingPointId != null ? trackingPointId : UUID.randomUUID();
+			Object subLevel = subLevelId == null ? null : getSubLevel(level, subLevelId);
+			Object pointer = null;
+			if (subLevel != null) {
+				if (getLastSerializationPointer == null) {
+					getLastSerializationPointer = subLevel.getClass().getMethod("getLastSerializationPointer");
+				}
+				pointer = getLastSerializationPointer.invoke(subLevel);
+			}
+			Vec3 physical = physicalPosition != null ? physicalPosition : storedPhysicalPosition(level, position, subLevelId);
+			Vector3d pointVector = subLevelId == null
+					? new Vector3d(physical.x, physical.y, physical.z)
+					: new Vector3d(position.getX() + 0.5D, position.getY() + 0.5D, position.getZ() + 0.5D);
+			Vector3d placeholder = subLevelId == null ? null : new Vector3d(physical.x, physical.y, physical.z);
+			Object pointObject = trackingPointConstructor.newInstance(subLevelId != null, subLevelId, pointer, pointVector, placeholder);
+			Object data = getTrackingPointData.invoke(null, serverLevel);
+			setTrackingPoint.invoke(data, id, pointObject);
+			return id;
+		} catch (ReflectiveOperationException | RuntimeException ignored) {
+			return trackingPointId;
+		}
+	}
+
+	private static TrackedPosition readTrackingPoint(ServerLevel level, UUID trackingPointId) {
+		init();
+		if (getTrackingPointData == null || getTrackingPoint == null || point == null || inSubLevel == null) {
+			return new TrackedPosition(null, null, trackingPointId, null);
+		}
+		try {
+			Object data = getTrackingPointData.invoke(null, level);
+			Object trackingPoint = getTrackingPoint.invoke(data, trackingPointId);
+			if (trackingPoint == null) {
+				return new TrackedPosition(null, null, trackingPointId, null);
+			}
+			Vector3d pointVector = (Vector3d) point.invoke(trackingPoint);
+			boolean inSub = Boolean.TRUE.equals(inSubLevel.invoke(trackingPoint));
+			UUID subLevelId = inSub ? (UUID) subLevelID.invoke(trackingPoint) : null;
+			BlockPos position = BlockPos.containing(pointVector.x(), pointVector.y(), pointVector.z());
+			Vec3 physicalPosition;
+			if (inSub && subLevelId != null) {
+				Object subLevel = getSubLevel(level, subLevelId);
+				if (subLevel != null) {
+					physicalPosition = transformSubLevelPosition(subLevel, new Vec3(pointVector.x(), pointVector.y(), pointVector.z()));
+				} else {
+					Vector3d placeholder = (Vector3d) globalPlaceholderPosition.invoke(trackingPoint);
+					physicalPosition = placeholder == null ? null : new Vec3(placeholder.x(), placeholder.y(), placeholder.z());
+				}
+			} else {
+				physicalPosition = new Vec3(pointVector.x(), pointVector.y(), pointVector.z());
+			}
+			return new TrackedPosition(position, subLevelId, trackingPointId, physicalPosition);
+		} catch (ReflectiveOperationException | RuntimeException ignored) {
+			return new TrackedPosition(null, null, trackingPointId, null);
 		}
 	}
 

@@ -56,6 +56,8 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 
 	public BlockPos target = null;
 	public UUID targetSubLevelId = null;
+	public UUID targetTrackingPointId = null;
+	public Vec3 targetPhysicalPosition = null;
 	public long ticksExisted = 0;
 	public Random random = new Random();
 	public int offset = random.nextInt(40);
@@ -78,6 +80,8 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 			target = new BlockPos(nbt.getInt("targetX"), nbt.getInt("targetY"), nbt.getInt("targetZ"));
 		}
 		targetSubLevelId = readTargetSubLevelId(nbt);
+		targetTrackingPointId = readUuid(nbt, "targetTrackingPoint");
+		targetPhysicalPosition = readVec3(nbt, "targetPhysicalX", "targetPhysicalY", "targetPhysicalZ");
 		capability.deserializeNBT(nbt);
 	}
 
@@ -92,6 +96,10 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 		if (targetSubLevelId != null) {
 			nbt.putString("targetSubLevel", targetSubLevelId.toString());
 		}
+		if (targetTrackingPointId != null) {
+			nbt.putString("targetTrackingPoint", targetTrackingPointId.toString());
+		}
+		writeVec3(nbt, targetPhysicalPosition, "targetPhysicalX", "targetPhysicalY", "targetPhysicalZ");
 		capability.writeToNBT(nbt);
 	}
 
@@ -106,6 +114,10 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 		if (targetSubLevelId != null) {
 			nbt.putString("targetSubLevel", targetSubLevelId.toString());
 		}
+		if (targetTrackingPointId != null) {
+			nbt.putString("targetTrackingPoint", targetTrackingPointId.toString());
+		}
+		writeVec3(nbt, targetPhysicalPosition, "targetPhysicalX", "targetPhysicalY", "targetPhysicalZ");
 		return nbt;
 	}
 
@@ -133,13 +145,13 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 			}
 		}
 		if ((blockEntity.ticksExisted + blockEntity.offset) % 20 == 0 && blockEntity.canSendBurst() && blockEntity.capability.getEmber() > PULL_RATE) {
-			BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(blockEntity, blockEntity.target, blockEntity.targetSubLevelId);
+			BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(blockEntity, blockEntity.target, blockEntity.targetSubLevelId, blockEntity.targetPhysicalPosition);
 			if (targetTile instanceof IEmberPacketReceiver) {
 				if (((IEmberPacketReceiver) targetTile).hasRoomFor(TRANSFER_RATE)) {
 					EmberPacketEntity packet = RegistryManager.EMBER_PACKET.get().create(blockEntity.level);
 					Vec3 velocity = SubLevelCompat.toPhysicalDirection(blockEntity, getBurstVelocity(facing));
 					Vec3 start = SubLevelCompat.toPhysicalPosition(blockEntity, Vec3.atCenterOf(pos));
-					Vec3 destination = SubLevelCompat.linkedTargetPhysicalPosition(blockEntity, blockEntity.target, blockEntity.targetSubLevelId);
+					Vec3 destination = SubLevelCompat.currentTrackedPhysicalPosition(blockEntity, blockEntity.target, blockEntity.targetSubLevelId, blockEntity.targetPhysicalPosition);
 					packet.initCustom(start, destination, velocity.x, velocity.y, velocity.z, Math.min(TRANSFER_RATE, blockEntity.capability.getEmber()));
 					packet.pos = blockEntity.getBlockPos().immutable();
 					packet.setTrackedTarget(blockEntity.target, blockEntity.targetSubLevelId);
@@ -152,10 +164,11 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 	}
 
 	public boolean canSendBurst() {
+		refreshTrackedTarget();
 		if (!level.hasNeighborSignal(worldPosition) || target == null || level.isClientSide) {
 			return false;
 		}
-		BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId);
+		BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);
 		if (targetTile == null) {
 			return false;
 		}
@@ -212,13 +225,18 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 	public void setTargetPosition(BlockPos pos, Direction side) {
 		target = pos;
 		targetSubLevelId = null;
+		targetTrackingPointId = null;
+		targetPhysicalPosition = null;
 		this.setChanged();
 	}
 
 	@Override
 	public void setTargetPosition(BlockPos pos, Direction side, BlockEntity targetEntity) {
-		target = pos;
-		targetSubLevelId = SubLevelCompat.getContainingSubLevelId(targetEntity);
+		SubLevelCompat.TrackedPosition trackedPosition = SubLevelCompat.captureTrackedTarget(targetEntity, targetTrackingPointId);
+		target = trackedPosition.position() == null ? pos : trackedPosition.position();
+		targetSubLevelId = trackedPosition.subLevelId();
+		targetTrackingPointId = trackedPosition.trackingPointId();
+		targetPhysicalPosition = trackedPosition.physicalPosition();
 		this.setChanged();
 	}
 
@@ -244,14 +262,57 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 	}
 
 	private static UUID readTargetSubLevelId(CompoundTag nbt) {
-		if (!nbt.contains("targetSubLevel")) {
+		return readUuid(nbt, "targetSubLevel");
+	}
+
+	public void refreshTrackedTarget() {
+		SubLevelCompat.TrackedPosition trackedPosition = SubLevelCompat.refreshTrackedTarget(this, target, targetSubLevelId, targetTrackingPointId, targetPhysicalPosition);
+		boolean changed = false;
+		if (!java.util.Objects.equals(target, trackedPosition.position())) {
+			target = trackedPosition.position();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(targetSubLevelId, trackedPosition.subLevelId())) {
+			targetSubLevelId = trackedPosition.subLevelId();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(targetTrackingPointId, trackedPosition.trackingPointId())) {
+			targetTrackingPointId = trackedPosition.trackingPointId();
+			changed = true;
+		}
+		if (!java.util.Objects.equals(targetPhysicalPosition, trackedPosition.physicalPosition())) {
+			targetPhysicalPosition = trackedPosition.physicalPosition();
+			changed = true;
+		}
+		if (changed) {
+			this.setChanged();
+		}
+	}
+
+	private static UUID readUuid(CompoundTag nbt, String key) {
+		if (!nbt.contains(key)) {
 			return null;
 		}
 		try {
-			return UUID.fromString(nbt.getString("targetSubLevel"));
+			return UUID.fromString(nbt.getString(key));
 		} catch (IllegalArgumentException ignored) {
 			return null;
 		}
+	}
+
+	private static Vec3 readVec3(CompoundTag nbt, String xKey, String yKey, String zKey) {
+		return nbt.contains(xKey) && nbt.contains(yKey) && nbt.contains(zKey)
+				? new Vec3(nbt.getDouble(xKey), nbt.getDouble(yKey), nbt.getDouble(zKey))
+				: null;
+	}
+
+	private static void writeVec3(CompoundTag nbt, Vec3 vec, String xKey, String yKey, String zKey) {
+		if (vec == null) {
+			return;
+		}
+		nbt.putDouble(xKey, vec.x);
+		nbt.putDouble(yKey, vec.y);
+		nbt.putDouble(zKey, vec.z);
 	}
 
 	@Override

@@ -45,7 +45,7 @@ public class InfernoForgeBlock extends DoubleTallMachineBlock implements SimpleW
 
 	public InfernoForgeBlock(Properties pProperties, SoundType topSound) {
 		super(pProperties, topSound);
-		this.registerDefaultState(this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false).setValue(BlockStateProperties.HORIZONTAL_AXIS, Axis.Z));
+		this.registerDefaultState(this.defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, false).setValue(BlockStateProperties.HORIZONTAL_AXIS, Axis.Z).setValue(BlockStateProperties.OPEN, false));
 	}
 
 	@Override
@@ -64,13 +64,11 @@ public class InfernoForgeBlock extends DoubleTallMachineBlock implements SimpleW
 					return InteractionResult.CONSUME;
 				}
 				if (!level.isClientSide()) {
-					hatch.open = !hatch.open;
-					hatch.lastToggle = level.getGameTime();
+					hatch.setOpen(!hatch.open, level.getGameTime());
 					if (hatch.open)
 						level.playSound(null, pos, EmbersSounds.INFERNO_FORGE_OPEN.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
 					else
 						level.playSound(null, pos, EmbersSounds.INFERNO_FORGE_CLOSE.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
-					hatch.setChanged();
 				}
 				return InteractionResult.SUCCESS;
 			}
@@ -81,7 +79,7 @@ public class InfernoForgeBlock extends DoubleTallMachineBlock implements SimpleW
 	@Override
 	public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
 		if (state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER) {
-			if (level.getBlockEntity(pos) instanceof InfernoForgeTopBlockEntity hatch && hatch.open) {
+			if (state.getValue(BlockStateProperties.OPEN) || level.getBlockEntity(pos) instanceof InfernoForgeTopBlockEntity hatch && hatch.open) {
 				return Shapes.empty();
 			}
 			return TOP_AABB;
@@ -136,7 +134,7 @@ public class InfernoForgeBlock extends DoubleTallMachineBlock implements SimpleW
 				BlockState edgeStateUpper = RegistryManager.INFERNO_FORGE_EDGE.get().defaultBlockState().setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(level.getFluidState(edgePosUpper).getType() == Fluids.WATER));
 				level.setBlock(edgePosUpper, edgeStateUpper.setValue(MechEdgeBlockBase.EDGE, edge).setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER), UPDATE_ALL);
 			}
-			BlockState topState = this.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_AXIS, state.getValue(BlockStateProperties.HORIZONTAL_AXIS)).setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(level.getFluidState(pos.above()).getType() == Fluids.WATER));
+			BlockState topState = this.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_AXIS, state.getValue(BlockStateProperties.HORIZONTAL_AXIS)).setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(level.getFluidState(pos.above()).getType() == Fluids.WATER)).setValue(BlockStateProperties.OPEN, false);
 			level.setBlock(pos.above(), topState.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER), UPDATE_ALL);
 		}
 	}
@@ -159,5 +157,6 @@ public class InfernoForgeBlock extends DoubleTallMachineBlock implements SimpleW
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
 		super.createBlockStateDefinition(pBuilder);
 		pBuilder.add(BlockStateProperties.HORIZONTAL_AXIS);
+		pBuilder.add(BlockStateProperties.OPEN);
 	}
 }

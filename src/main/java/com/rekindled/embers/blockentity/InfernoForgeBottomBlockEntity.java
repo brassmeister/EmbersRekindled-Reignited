@@ -32,6 +32,7 @@ import com.rekindled.embers.util.sound.ISoundController;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
@@ -116,19 +117,25 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 		if (blockEntity.progress > 0) {
 			if (random.nextInt(10) == 0) {
 				if (random.nextInt(3) == 0)
-					level.addParticle(SparkParticleOptions.EMBER, pos.getX() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
+					blockEntity.addParticle(SparkParticleOptions.EMBER, pos.getX() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
 				if (random.nextInt(3) == 0)
-					level.addParticle(SparkParticleOptions.EMBER, pos.getX() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
+					blockEntity.addParticle(SparkParticleOptions.EMBER, pos.getX() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
 				if (random.nextInt(3) == 0)
-					level.addParticle(SparkParticleOptions.EMBER, pos.getX() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
+					blockEntity.addParticle(SparkParticleOptions.EMBER, pos.getX() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
 				if (random.nextInt(3) == 0)
-					level.addParticle(SparkParticleOptions.EMBER, pos.getX() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
+					blockEntity.addParticle(SparkParticleOptions.EMBER, pos.getX() - 0.5f + 0.125f * (random.nextFloat() - 0.5f), pos.getY() + 1.75f, pos.getZ() + 1.5f + 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat() - 0.5f), 0.125f * (random.nextFloat()), 0.125f * (random.nextFloat() - 0.5f));
 			}
-			level.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() - 0.3f, pos.getY() + 1.85f, pos.getZ() - 0.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
-			level.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() + 1.3f, pos.getY() + 1.85f, pos.getZ() - 0.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
-			level.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() + 1.3f, pos.getY() + 1.85f, pos.getZ() + 1.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
-			level.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() - 0.3f, pos.getY() + 1.85f, pos.getZ() + 1.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
+			blockEntity.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() - 0.3f, pos.getY() + 1.85f, pos.getZ() - 0.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
+			blockEntity.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() + 1.3f, pos.getY() + 1.85f, pos.getZ() - 0.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
+			blockEntity.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() + 1.3f, pos.getY() + 1.85f, pos.getZ() + 1.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
+			blockEntity.addParticle(SmokeParticleOptions.BIG_SMOKE, pos.getX() - 0.3f, pos.getY() + 1.85f, pos.getZ() + 1.3f, 0.025f * (random.nextFloat() - 0.5f), 0.05f * (random.nextFloat() + 1.0f), 0.025f * (random.nextFloat() - 0.5f));
 		}
+	}
+
+	private void addParticle(ParticleOptions particle, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+		Vec3 position = SubLevelCompat.toPhysicalPosition(this, new Vec3(x, y, z));
+		Vec3 speed = SubLevelCompat.toPhysicalDirection(this, new Vec3(xSpeed, ySpeed, zSpeed));
+		level.addParticle(particle, position.x, position.y, position.z, speed.x, speed.y, speed.z);
 	}
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, InfernoForgeBottomBlockEntity blockEntity) {
@@ -159,9 +166,7 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 			blockEntity.progress = 0;
 			blockEntity.setChanged();
 			if (level.getBlockEntity(pos.above()) instanceof InfernoForgeTopBlockEntity hatch) {
-				hatch.open = true;
-				hatch.lastToggle = level.getGameTime();
-				hatch.setChanged();
+				hatch.setOpen(true, level.getGameTime());
 				level.playSound(null, pos, EmbersSounds.INFERNO_FORGE_OPEN.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
 			}
 			return;
@@ -184,9 +189,7 @@ public class InfernoForgeBottomBlockEntity extends BlockEntity implements IExtra
 		}
 		boolean forgeSuccess = false;
 		if (level.getBlockEntity(pos.above()) instanceof InfernoForgeTopBlockEntity hatch) {
-			hatch.open = true;
-			hatch.lastToggle = level.getGameTime();
-			hatch.setChanged();
+			hatch.setOpen(true, level.getGameTime());
 			level.playSound(null, pos, EmbersSounds.INFERNO_FORGE_OPEN.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
 		}
 		if (blockEntity.emberValue > 0) {
