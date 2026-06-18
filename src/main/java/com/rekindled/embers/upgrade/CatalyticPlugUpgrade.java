@@ -71,11 +71,18 @@ public class CatalyticPlugUpgrade extends DefaultUpgradeProvider {
 
 	@Override
 	public boolean doWork(BlockEntity tile, List<UpgradeContext> upgrades, int distance, int count) {
-		if (getCatalystMultiplier() != 1.0 && this.tile instanceof CatalyticPlugBlockEntity) {
-			depleteCatalyst(1);
-			((CatalyticPlugBlockEntity) this.tile).setActive(20);
-		}
+		doBatchedWork(tile, upgrades, distance, count, 1);
 		return false; //No cancel
+	}
+
+	public void doBatchedWork(BlockEntity tile, List<UpgradeContext> upgrades, int distance, int count, int ticks) {
+		if (ticks <= 0) {
+			return;
+		}
+		if (getCatalystMultiplier() != 1.0 && this.tile instanceof CatalyticPlugBlockEntity) {
+			depleteCatalyst(ticks);
+			((CatalyticPlugBlockEntity) this.tile).setActive(ticks + 20);
+		}
 	}
 
 	private double getCatalystMultiplier() {

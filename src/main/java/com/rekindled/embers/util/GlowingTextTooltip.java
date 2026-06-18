@@ -39,6 +39,7 @@ public class GlowingTextTooltip implements TooltipComponent {
 	public static class GlowingTextClientTooltip implements ClientTooltipComponent {
 
 		GlowingTextTooltip tooltip;
+		private static final int DEFAULT_GLOWING_TEXT_COLOR = 0xA8A8A8;
 
 		public GlowingTextClientTooltip(GlowingTextTooltip tooltip) {
 			this.tooltip = tooltip;
@@ -56,20 +57,25 @@ public class GlowingTextTooltip implements TooltipComponent {
 
 		@Override
 		public void renderText(Font font, int mouseX, int mouseY, Matrix4f matrix, MultiBufferSource.BufferSource bufferSource) {
-			font.drawInBatch(tooltip.normalText, (float)mouseX, (float)mouseY, -1, true, matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+			int normalWidth = font.width(tooltip.normalText);
+			font.drawInBatch(tooltip.normalText.getVisualOrderText(), (float)mouseX, (float)mouseY, textColor(tooltip.normalText, 0xFFFFFF), true, matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+			font.drawInBatch(tooltip.glowingText.getVisualOrderText(), (float)(mouseX + normalWidth), (float)mouseY, textColor(tooltip.glowingText, DEFAULT_GLOWING_TEXT_COLOR), true, matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
 		}
 
 		@Override
 		public void renderImage(Font font, int x, int y, GuiGraphics graphics) {
 			if (tooltip.intensity < -1.0f) {
 				GuiCodex.drawTextGlowingAura(font, graphics, tooltip.glowingText.getVisualOrderText(), font.width(tooltip.normalText) + x, y);
-			} else {
-				font.drawInBatch(tooltip.glowingText, x, y, -1, true, graphics.pose().last().pose(), graphics.bufferSource(), Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+			} else if (tooltip.intensity > 0.0f) {
 				graphics.pose().pushPose();
 				graphics.pose().translate(0, 0, 0.06);
 				GuiCodex.drawTextGlowingAura(font, graphics, tooltip.glowingText.plainCopy().getVisualOrderText(), font.width(tooltip.normalText) + x, y, tooltip.intensity);
 				graphics.pose().popPose();
 			}
+		}
+
+		private static int textColor(Component component, int fallback) {
+			return component.getStyle().getColor() != null ? component.getStyle().getColor().getValue() : fallback;
 		}
 	}
 }

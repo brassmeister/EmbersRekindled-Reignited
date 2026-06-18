@@ -1,5 +1,7 @@
 package com.rekindled.embers.particle;
 
+import java.util.Optional;
+
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -12,6 +14,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -19,6 +22,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class AlchemyCircleParticle extends TextureSheetParticle {
+	private final Optional<ParticleGroup> particleGroup = EmbersRenderTypes.emberParticleGroup();
 
 	public float rotScale = 0.02f;
 	public static final Quaternionf QUAT = Axis.XP.rotationDegrees(90);
@@ -103,8 +107,13 @@ public class AlchemyCircleParticle extends TextureSheetParticle {
 	}
 
 	@Override
+	public Optional<ParticleGroup> getParticleGroup() {
+		return this.particleGroup;
+	}
+
+	@Override
 	public ParticleRenderType getRenderType() {
-		return EmbersRenderTypes.PARTICLE_SHEET_EMBER_HARD;
+		return EmbersRenderTypes.emberHardParticleSheet();
 	}
 
 	@OnlyIn(Dist.CLIENT)

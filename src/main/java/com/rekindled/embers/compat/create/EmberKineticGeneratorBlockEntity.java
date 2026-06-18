@@ -30,6 +30,7 @@ public class EmberKineticGeneratorBlockEntity extends GeneratingKineticBlockEnti
 	public static final double BASE_EMBER_PER_TICK = 1.0;
 	public static final double MAX_EMBER_PER_TICK = 8.0;
 	public static final int MAX_CATALYTIC_PLUGS = 4;
+	private static final int WORK_INTERVAL = 20;
 
 	private final IEmberCapability ember = new DefaultEmberCapability() {
 		@Override
@@ -44,6 +45,7 @@ public class EmberKineticGeneratorBlockEntity extends GeneratingKineticBlockEnti
 	};
 	private boolean active;
 	private int activeCatalyticPlugs;
+	private long fundedUntilTick;
 	private final List<UpgradeContext> upgrades = new LinkedList<>();
 
 	public EmberKineticGeneratorBlockEntity(BlockPos pos, BlockState state) {
@@ -63,13 +65,19 @@ public class EmberKineticGeneratorBlockEntity extends GeneratingKineticBlockEnti
 		if (level == null || level.isClientSide) {
 			return;
 		}
+		long gameTime = level.getGameTime();
+		boolean expired = active && gameTime >= fundedUntilTick;
+		if (!expired && !isScheduledWorkTick(gameTime)) {
+			return;
+		}
 		refreshUpgrades();
 		int nextActiveCatalyticPlugs = getActiveCatalyticPlugCount();
 		double emberPerTick = getEmberBurnRate(nextActiveCatalyticPlugs);
-		boolean nextActive = ember.removeAmount(emberPerTick, false) >= emberPerTick;
+		int fundedTicks = fundWorkTicks(emberPerTick);
+		boolean nextActive = fundedTicks > 0;
 		if (nextActive) {
-			UpgradeUtil.doWork(this, upgrades);
-			ember.removeAmount(emberPerTick, true);
+			fundedUntilTick = gameTime + fundedTicks;
+			doBatchedCatalystWork(fundedTicks);
 		}
 		if (active != nextActive || activeCatalyticPlugs != nextActiveCatalyticPlugs) {
 			active = nextActive;
@@ -133,9 +141,39 @@ public class EmberKineticGeneratorBlockEntity extends GeneratingKineticBlockEnti
 
 	private void refreshUpgrades() {
 		upgrades.clear();
-		upgrades.addAll(UpgradeUtil.getUpgrades(level, worldPosition, Direction.values()));
+		UpgradeUtil.getUpgrades(level, worldPosition, Direction.values(), upgrades);
 		upgrades.removeIf(upgrade -> !(upgrade.upgrade() instanceof CatalyticPlugUpgrade));
 		UpgradeUtil.verifyUpgrades(this, upgrades);
+	}
+
+	private boolean isScheduledWorkTick(long gameTime) {
+		int offset = Math.floorMod(worldPosition.getX() * 31 + worldPosition.getY() * 17 + worldPosition.getZ() * 13, WORK_INTERVAL);
+		return (gameTime + offset) % WORK_INTERVAL == 0;
+	}
+
+	private int fundWorkTicks(double emberPerTick) {
+		if (emberPerTick <= 0) {
+			return WORK_INTERVAL;
+		}
+		double fullCost = emberPerTick * WORK_INTERVAL;
+		if (ember.removeAmount(fullCost, false) >= fullCost) {
+			ember.removeAmount(fullCost, true);
+			return WORK_INTERVAL;
+		}
+		int affordableTicks = Math.min(WORK_INTERVAL, (int) Math.floor(ember.getEmber() / emberPerTick));
+		if (affordableTicks <= 0) {
+			return 0;
+		}
+		ember.removeAmount(emberPerTick * affordableTicks, true);
+		return affordableTicks;
+	}
+
+	private void doBatchedCatalystWork(int ticks) {
+		for (UpgradeContext upgrade : upgrades) {
+			if (upgrade.upgrade() instanceof CatalyticPlugUpgrade plug) {
+				plug.doBatchedWork(this, upgrades, upgrade.distance(), upgrade.count(), ticks);
+			}
+		}
 	}
 
 	private int getActiveCatalyticPlugCount() {

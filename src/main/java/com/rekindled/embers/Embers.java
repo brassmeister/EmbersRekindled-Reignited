@@ -1,5 +1,7 @@
 package com.rekindled.embers;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -29,12 +31,14 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -84,6 +88,7 @@ public class Embers {
 		EmbersSounds.init();
 
 		ConfigManager.register(modContainer);
+		registerClientConfigScreens(modEventBus, modContainer);
 
 		if (ModList.get().isLoaded("curios")) {
 			CuriosCompat.init();
@@ -93,6 +98,19 @@ public class Embers {
 		}
 		if (ModList.get().isLoaded("create") && ModList.get().isLoaded("createthrusters")) {
 			ThrustersCompat.init(modEventBus);
+		}
+	}
+
+	private static void registerClientConfigScreens(IEventBus modEventBus, ModContainer modContainer) {
+		if (FMLEnvironment.dist != Dist.CLIENT) {
+			return;
+		}
+		try {
+			Class<?> registrar = Class.forName("com.rekindled.embers.client.EmbersConfigScreens");
+			registrar.getMethod("register", IEventBus.class, ModContainer.class).invoke(null, modEventBus, modContainer);
+		} catch (ReflectiveOperationException exception) {
+			Throwable cause = exception instanceof InvocationTargetException invocation && invocation.getCause() != null ? invocation.getCause() : exception;
+			LOGGER.error("Failed to register Embers config screens", cause);
 		}
 	}
 

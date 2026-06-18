@@ -1,5 +1,6 @@
 package com.rekindled.embers.blockentity;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.capabilities.EmbersCapabilities;
 import com.rekindled.embers.upgrade.ClockworkAttenuatorUpgrade;
@@ -65,7 +66,7 @@ public class ClockworkAttenuatorBlockEntity extends BlockEntity {
 	}
 
 	public double getSpeed() {
-		return level.hasNeighborSignal(worldPosition) ? activeSpeed : inactiveSpeed;
+		return ConfigManager.isRedstoneControlActive(level, worldPosition) ? activeSpeed : inactiveSpeed;
 	}
 
 	public double getNext(double current) {

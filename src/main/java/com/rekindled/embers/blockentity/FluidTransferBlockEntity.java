@@ -22,6 +22,7 @@ import com.rekindled.embers.compat.legacy.capabilities.ForgeCapabilities;
 import com.rekindled.embers.compat.legacy.LazyOptional;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 
 public class FluidTransferBlockEntity extends FluidPipeBlockEntityBase {
@@ -31,6 +32,7 @@ public class FluidTransferBlockEntity extends FluidPipeBlockEntityBase {
 	Random random = new Random();
 	public boolean syncFilter = true;
 	IFluidHandler outputSide;
+	IFluidHandler[] sideHandlers;
 	public LazyOptional<IFluidHandler> outputHolder = LazyOptional.of(() -> outputSide);
 
 	public FluidTransferBlockEntity(BlockPos pPos, BlockState pBlockState) {
@@ -61,6 +63,56 @@ public class FluidTransferBlockEntity extends FluidPipeBlockEntityBase {
 			}
 		};
 		outputSide = Misc.makeRestrictedFluidHandler(tank, false, true);
+		sideHandlers = new IFluidHandler[Direction.values().length];
+		for (Direction facing : Direction.values()) {
+			sideHandlers[facing.get3DDataValue()] = new IFluidHandler() {
+				@Override
+				public int fill(FluidStack resource, FluidAction action) {
+					if (!filterFluid.isEmpty()) {
+						if (resource == null) {
+							return 0;
+						}
+						boolean matches = filterFluid.isComponentsPatchEmpty()
+								? FluidStack.isSameFluid(resource, filterFluid)
+								: FluidStack.isSameFluidSameComponents(resource, filterFluid);
+						if (!matches) {
+							return 0;
+						}
+					}
+					return PipeNetworkUtil.routeFluid(FluidTransferBlockEntity.this, facing, resource, action);
+				}
+
+				@Override
+				public FluidStack drain(FluidStack resource, FluidAction action) {
+					return tank.drain(resource, action);
+				}
+
+				@Override
+				public FluidStack drain(int maxDrain, FluidAction action) {
+					return tank.drain(maxDrain, action);
+				}
+
+				@Override
+				public int getTanks() {
+					return tank.getTanks();
+				}
+
+				@Override
+				public FluidStack getFluidInTank(int tank) {
+					return FluidTransferBlockEntity.this.tank.getFluidInTank(tank);
+				}
+
+				@Override
+				public int getTankCapacity(int tank) {
+					return FluidTransferBlockEntity.this.tank.getTankCapacity(tank);
+				}
+
+				@Override
+				public boolean isFluidValid(int tank, FluidStack stack) {
+					return FluidTransferBlockEntity.this.tank.isFluidValid(tank, stack);
+				}
+			};
+		}
 	}
 
 	@Override
@@ -97,7 +149,7 @@ public class FluidTransferBlockEntity extends FluidPipeBlockEntityBase {
 	}
 
 	private void writeFilter(CompoundTag nbt, HolderLookup.Provider registries) {
-		nbt.put("filter", filterFluid.save(registries));
+		nbt.put("filter", filterFluid.saveOptional(registries));
 	}
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, FluidTransferBlockEntity blockEntity) {
@@ -126,7 +178,7 @@ public class FluidTransferBlockEntity extends FluidPipeBlockEntityBase {
 				if (side.getOpposite() == facing)
 					return ForgeCapabilities.FLUID_HANDLER.orEmpty(cap, outputHolder);
 				else if (side.getAxis() == facing.getAxis())
-					return ForgeCapabilities.FLUID_HANDLER.orEmpty(cap, holder);
+					return ForgeCapabilities.FLUID_HANDLER.orEmpty(cap, LazyOptional.of(() -> this.sideHandlers[side.get3DDataValue()]));
 			}
 		}
 		return LazyOptional.empty();

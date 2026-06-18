@@ -1,17 +1,21 @@
 package com.rekindled.embers.particle;
 
+import java.util.Optional;
+
 import com.rekindled.embers.render.EmbersRenderTypes;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class XRayGlowParticle extends TextureSheetParticle {
+	private final Optional<ParticleGroup> particleGroup = EmbersRenderTypes.emberParticleGroup();
 
 	public float rBase = 1.0F;
 	public float gBase = 1.0F;
@@ -73,8 +77,13 @@ public class XRayGlowParticle extends TextureSheetParticle {
 	}
 
 	@Override
+	public Optional<ParticleGroup> getParticleGroup() {
+		return this.particleGroup;
+	}
+
+	@Override
 	public ParticleRenderType getRenderType() {
-		return EmbersRenderTypes.PARTICLE_SHEET_ADDITIVE_XRAY;
+		return EmbersRenderTypes.additiveXRayParticleSheet();
 	}
 
 	@OnlyIn(Dist.CLIENT)

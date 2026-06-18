@@ -39,9 +39,7 @@ public class FluidPipeBlockEntity extends FluidPipeBlockEntityBase {
 
 				@Override
 				public int fill(FluidStack resource, FluidAction action) {
-					if(action.execute())
-						setFrom(facing, true);
-					return tank.fill(resource, action);
+					return PipeNetworkUtil.routeFluid(FluidPipeBlockEntity.this, facing, resource, action);
 				}
 
 				@Nullable

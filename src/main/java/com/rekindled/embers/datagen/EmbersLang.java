@@ -1119,6 +1119,62 @@ public class EmbersLang extends LanguageProvider {
 		add(Embers.MODID + ".research.page.projectile_augments_category", "Projectile Augments");
 		add(Embers.MODID + ".research.page.misc_augments_category", "Other Augments");
 
+		addConfigLabel("parameters", "Machine and Item Parameters");
+		addConfigLabel("mechanical_core.max_distance", "Mechanical Core Proxy Distance");
+		addConfigLabel("emberBore.speedMod", "Ember Bore Speed Modifier");
+		addConfigLabel("emberBore.processTime", "Ember Bore Process Time");
+		addConfigLabel("emberBore.fuelCost", "Ember Bore Fuel Cost");
+		addConfigLabel("reservoir.capacity", "Reservoir Capacity");
+		addConfigLabel("mini_boiler.capacity", "Mini Boiler Capacity");
+		addConfigLabel("mini_boiler.heat_multiplier", "Mini Boiler Heat Multiplier");
+		addConfigLabel("mini_boiler.can_explode", "Mini Boiler Explodes");
+		addConfigLabel("melter.processTime", "Melter Process Time");
+		addConfigLabel("melter.cost", "Melter Ember Cost");
+		addConfigLabel("melter.capacity", "Melter Capacity");
+		addConfigLabel("geoSeparator.capacity", "Geologic Separator Capacity");
+		addConfigLabel("stamper.capacity", "Stamp Base Capacity");
+		addConfigLabel("charger.transfer", "Copper Charger Transfer Rate");
+		addConfigLabel("fluidVessel.capacity", "Fluid Vessel Capacity");
+		addConfigLabel("ember_injector.max_distance", "Ember Injector Max Distance");
+		addConfigLabel("hearth_coil.ember_cost", "Hearth Coil Ember Cost");
+		addConfigLabel("hearth_coil.heating_speed", "Hearth Coil Heating Speed");
+		addConfigLabel("hearth_coil.cooling_speed", "Hearth Coil Cooling Speed");
+		addConfigLabel("hearth_coil.max_heat", "Hearth Coil Max Heat");
+		addConfigLabel("hearth_coil.min_cook_time", "Hearth Coil Min Cook Time");
+		addConfigLabel("hearth_coil.max_cook_time", "Hearth Coil Max Cook Time");
+		addConfigLabel("create.blaze_burner.ember_cost", "Create Blaze Burner Ember Cost");
+		addConfigLabel("create.blaze_burner.superheat_cost", "Create Blaze Burner Superheat Cost");
+		addConfigLabel("dawnstone_anvil.max_hits", "Dawnstone Anvil Max Hits");
+		addConfigLabel("blazingRay.cost", "Blazing Ray Ember Cost");
+		addConfigLabel("blazingRay.cooldown", "Blazing Ray Cooldown");
+		addConfigLabel("blazingRay.charge", "Blazing Ray Max Charge Time");
+		addConfigLabel("blazingRay.damage", "Blazing Ray Damage");
+		addConfigLabel("blazingRay.spread", "Blazing Ray Max Spread");
+		addConfigLabel("blazingRay.distance", "Blazing Ray Max Distance");
+		addConfigLabel("cinderStaff.cost", "Cinder Staff Ember Cost");
+		addConfigLabel("cinderStaff.cooldown", "Cinder Staff Cooldown");
+		addConfigLabel("cinderStaff.charge", "Cinder Staff Max Charge Time");
+		addConfigLabel("cinderStaff.damage", "Cinder Staff Damage");
+		addConfigLabel("cinderStaff.size", "Cinder Staff Projectile Size");
+		addConfigLabel("cinderStaff.aoe", "Cinder Staff Area of Effect");
+		addConfigLabel("cinderStaff.lifetime", "Cinder Staff Projectile Lifetime");
+		addConfigLabel("ashen.goggles.gem_slots", "Ashen Goggles Gem Slots");
+		addConfigLabel("ashen.cloak.gem_slots", "Ashen Cloak Gem Slots");
+		addConfigLabel("ashen.leggings.gem_slots", "Ashen Leggings Gem Slots");
+		addConfigLabel("ashen.boots.gem_slots", "Ashen Boots Gem Slots");
+		addConfigLabel("shiftingScales.damagePasses", "Shifting Scales Damage Passes");
+		addConfigLabel("shiftingScales.damageRates", "Shifting Scales Damage Rates");
+		addConfigLabel("misc", "Miscellaneous Settings");
+		addConfigLabel("codexProgression", "Codex Progression");
+		addConfigLabel("everybodyIsEnemy", "Homing Projectiles Target Neutral Players");
+		addConfigLabel("redstone.inverted_controls", "Invert Redstone Controls");
+		addConfigLabel("tagPreferences", "Tag Preferences");
+		addConfigLabel("itemPreferences", "Item Preferences");
+		addConfigLabel("render_fallback", "Use Fallback Render Type");
+		addConfigLabel("nugget_fluid_value", "Nugget Fluid Value");
+		addConfigLabel("ticks_to_open_codex", "Ticks to Open Codex");
+		addConfigLabel("codex_required_for_lookup", "Codex Required for Lookup");
+
 
 		//subtitles
 		addSubtitle(EmbersSounds.ALCHEMY_FAIL, "Energetic Alchemy fails...");
@@ -1237,6 +1293,10 @@ public class EmbersLang extends LanguageProvider {
 
 	public void addAugment(IAugment augment, String name, boolean singleLevel) {
 		add(Embers.MODID + ".tooltip.augment." + augment.getName().toLanguageKey(), name + (singleLevel ? "" : " %s"));
+	}
+
+	public void addConfigLabel(String path, String label) {
+		add(Embers.MODID + ".configuration." + path, label);
 	}
 
 	public void addUpgradeDesc(Supplier<? extends Item> key, String desc) {

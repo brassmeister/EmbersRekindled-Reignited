@@ -98,6 +98,15 @@ public class EmberEmitterBlock extends EmbersEntityBlock implements SimpleWaterl
 		}
 	}
 
+	private static BlockState updateConnectedSides(BlockState state, LevelAccessor level, BlockPos pos) {
+		Axis axis = state.getValue(FACING).getAxis();
+		for (int i = 0; i < DIRECTIONS.length; i++) {
+			Direction facing = getDirectionForIndex(axis, i);
+			state = state.setValue(DIRECTIONS[i], connected(facing, level.getBlockState(pos.relative(facing))));
+		}
+		return state;
+	}
+
 	public VoxelShape[][] shapeCache = new VoxelShape[6][16];
 
 	@Override
@@ -178,10 +187,7 @@ public class EmberEmitterBlock extends EmbersEntityBlock implements SimpleWaterl
 		for (Direction direction : pContext.getNearestLookingDirections()) {
 			BlockState blockstate = this.defaultBlockState().setValue(FACING, direction.getOpposite());
 			if (blockstate.canSurvive(pContext.getLevel(), pContext.getClickedPos())) {
-				for (int i = 0; i < DIRECTIONS.length; i++) {
-					Direction facing = getDirectionForIndex(direction.getAxis(), i);
-					blockstate = blockstate.setValue(DIRECTIONS[i], connected(facing, pContext.getLevel().getBlockState(pContext.getClickedPos().relative(facing))));
-				}
+				blockstate = updateConnectedSides(blockstate, pContext.getLevel(), pContext.getClickedPos());
 				return blockstate.setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(pContext.getLevel().getFluidState(pContext.getClickedPos()).getType() == Fluids.WATER));
 			}
 		}
@@ -193,10 +199,23 @@ public class EmberEmitterBlock extends EmbersEntityBlock implements SimpleWaterl
 		if (pState.getValue(BlockStateProperties.WATERLOGGED)) {
 			pLevel.scheduleTick(pCurrentPos, Fluids.WATER, Fluids.WATER.getTickDelay(pLevel));
 		}
-		if (pState.getValue(FACING).getAxis() != pFacing.getAxis()) {
-			pState = pState.setValue(DIRECTIONS[getIndexForDirection(pState.getValue(FACING).getAxis(), pFacing)], connected(pFacing, pFacingState));
+		if (pState.getValue(FACING).getOpposite() == pFacing && !pState.canSurvive(pLevel, pCurrentPos)) {
+			return Blocks.AIR.defaultBlockState();
 		}
-		return pState.getValue(FACING).getOpposite() == pFacing && !pState.canSurvive(pLevel, pCurrentPos) ? Blocks.AIR.defaultBlockState() : super.updateShape(pState, pFacing, pFacingState, pLevel, pCurrentPos, pFacingPos);
+		pState = updateConnectedSides(pState, pLevel, pCurrentPos);
+		return super.updateShape(pState, pFacing, pFacingState, pLevel, pCurrentPos, pFacingPos);
+	}
+
+	@Override
+	protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+		super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+		if (level.isClientSide) {
+			return;
+		}
+		BlockState updated = updateConnectedSides(state, level, pos);
+		if (updated != state) {
+			level.setBlock(pos, updated, Block.UPDATE_CLIENTS);
+		}
 	}
 
 	private static boolean facingConnected(Direction facing, BlockState state, DirectionProperty property) {

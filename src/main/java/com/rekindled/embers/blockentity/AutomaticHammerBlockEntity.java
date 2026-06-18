@@ -3,6 +3,7 @@ package com.rekindled.embers.blockentity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.capabilities.EmbersCapabilities;
@@ -105,7 +106,7 @@ public class AutomaticHammerBlockEntity extends BlockEntity implements IMechanic
 		if (tile instanceof IHammerable) {
 			double ember_cost = UpgradeUtil.getTotalEmberConsumption(blockEntity, EMBER_COST, blockEntity.upgrades);
 			IHammerable hammerable = (IHammerable) tile;
-			boolean redstoneEnabled = level.hasNeighborSignal(pos);
+			boolean redstoneEnabled = ConfigManager.isRedstoneControlActive(level, pos);
 			if (hammerable.isValid() && redstoneEnabled && blockEntity.capability.getEmber() >= ember_cost) {
 				boolean cancel = UpgradeUtil.doWork(blockEntity, blockEntity.upgrades);
 				int processTime = UpgradeUtil.getWorkTime(blockEntity, PROCESS_TIME, blockEntity.upgrades);

@@ -2,6 +2,7 @@ package com.rekindled.embers.blockentity;
 
 import java.util.List;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
@@ -57,7 +58,7 @@ public class ItemVacuumBlockEntity extends BlockEntity implements IExtraCapabili
 	}
 
 	public static void tick(Level level, BlockPos pos, BlockState state, ItemVacuumBlockEntity blockEntity) {
-		if (level.isClientSide || !level.hasNeighborSignal(pos)) {
+		if (level.isClientSide || !ConfigManager.isRedstoneControlActive(level, pos)) {
 			return;
 		}
 

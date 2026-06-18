@@ -64,6 +64,7 @@ import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.client.resources.model.ModelBakery.ModelBakerImpl;
 import net.minecraft.client.resources.model.UnbakedModel;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -96,17 +97,20 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 @OnlyIn(Dist.CLIENT)
 public class EmbersClientEvents {	public static int ticks = 0;
+	private static final int EMBER_SPLINE_TIMEOUT_TICKS = 20 * 20;
 	public static double gaugeAngle = 0;
 	public static long seed = 0;
 	public static BlockPos lastTarget = null;
 	public static UUID lastTargetSubLevel = null;
 	public static BlockPos lastEmitter = null;
 	public static UUID lastEmitterSubLevel = null;
+	public static int lastEmitterSeenTick = Integer.MIN_VALUE;
 	public static ResourceLocation GAUGE = ResourceLocation.fromNamespaceAndPath(Embers.MODID, "textures/gui/ember_meter_overlay.png"); 
 	public static ResourceLocation GAUGE_POINTER = ResourceLocation.fromNamespaceAndPath(Embers.MODID, "textures/gui/ember_meter_pointer.png"); 
 
 	public static void onLevelLoad(LevelEvent.Load event) {
 		ticks = 0;
+		clearLastEmitter();
 	}
 
 	public static void onClientTick(ClientTickEvent.Pre event) {
@@ -157,6 +161,8 @@ public class EmbersClientEvents {	public static int ticks = 0;
 				return;
 
 			Player player = mc.player;
+			boolean drewGlowLines = false;
+			RenderType glowLineRenderType = EmbersRenderTypes.glowLines();
 			HammerTarget target = Misc.getHammerTarget(player);
 			if (target != null) {
 				BlockEntity targetTile = SubLevelCompat.findStoredPosition(player.level(), target.pos, target.subLevelId);
@@ -169,7 +175,8 @@ public class EmbersClientEvents {	public static int ticks = 0;
 					return;
 				Direction targetDir = target.face;
 				Vec3 camPos = event.getCamera().getPosition();
-				VertexConsumer consumer = mc.renderBuffers().bufferSource().getBuffer(EmbersRenderTypes.GLOW_LINES);
+				VertexConsumer consumer = mc.renderBuffers().bufferSource().getBuffer(glowLineRenderType);
+				drewGlowLines = true;
 				Vector3f color = Misc.multColor(EmbersColors.EMBER, (float) (Math.sin(Math.toRadians(4.0f*(event.getRenderTick() + event.getPartialTick().getGameTimeDeltaPartialTick(false))))+1.0f) / 2.0f);
 				float alpha = 0.8F;
 				double x = -camPos.x;
@@ -240,15 +247,21 @@ public class EmbersClientEvents {	public static int ticks = 0;
 				lastTargetSubLevel = null;
 			}
 			if (Misc.isWearingLens(player)) {
+				BlockPos lookedPos = null;
+				UUID lookedSubLevel = null;
 				if (mc.hitResult instanceof BlockHitResult result && result != null && result.getType() == BlockHitResult.Type.BLOCK) {
 					BlockEntity emitter = SubLevelCompat.findAtPosition(mc.level, result.getBlockPos());
+					if (emitter != null) {
+						lookedPos = emitter.getBlockPos();
+						lookedSubLevel = SubLevelCompat.getContainingSubLevelId(emitter);
+					}
 					if (emitter instanceof IEmberPacketProducer) {
-						lastEmitter = emitter.getBlockPos();
-						lastEmitterSubLevel = SubLevelCompat.getContainingSubLevelId(emitter);
+						rememberLastEmitter(emitter);
 					}
 				}
 				Vec3 camPos = event.getCamera().getPosition();
-				VertexConsumer consumer = mc.renderBuffers().bufferSource().getBuffer(EmbersRenderTypes.GLOW_LINES);
+				VertexConsumer consumer = mc.renderBuffers().bufferSource().getBuffer(glowLineRenderType);
+				drewGlowLines = true;
 				Vector3f color = Misc.multColor(EmbersColors.EMBER, (float) (Math.sin(Math.toRadians(4.0f*(event.getRenderTick() + event.getPartialTick().getGameTimeDeltaPartialTick(false))))+1.0f) / 2.0f);
 				float alpha = 0.6F;
 				double x = -camPos.x;
@@ -271,6 +284,7 @@ public class EmbersClientEvents {	public static int ticks = 0;
 				HashSet<EmberLineNode> drawnLines = new HashSet<EmberLineNode>();
 				HashSet<EmberLineNode> linesToDraw = new HashSet<EmberLineNode>();
 				HashSet<EmberLineNode> nextLinesToDraw = new HashSet<EmberLineNode>();
+				boolean lookedAtSplineNode = false;
 				if (lastEmitter != null) {
 					linesToDraw.add(new EmberLineNode(lastEmitter, lastEmitterSubLevel));
 				}
@@ -280,6 +294,9 @@ public class EmbersClientEvents {	public static int ticks = 0;
 							EmberLineNode newTarget = drawEmittingLine(event, player.level(), mc, lineDrawer, emitterNode, side);
 							if (newTarget != null) {
 								i++;
+								if (matchesLineNode(newTarget, lookedPos, lookedSubLevel)) {
+									lookedAtSplineNode = true;
+								}
 								if (!drawnLines.contains(newTarget))
 									nextLinesToDraw.add(newTarget);
 							}
@@ -289,14 +306,38 @@ public class EmbersClientEvents {	public static int ticks = 0;
 					linesToDraw = nextLinesToDraw;
 					nextLinesToDraw = new HashSet<EmberLineNode>();
 				}
+				if (lookedAtSplineNode) {
+					lastEmitterSeenTick = ticks;
+				}
+				if (lastEmitter != null && ticks - lastEmitterSeenTick > EMBER_SPLINE_TIMEOUT_TICKS) {
+					clearLastEmitter();
+				}
 			} else {
-				lastEmitter = null;
-				lastEmitterSubLevel = null;
+				clearLastEmitter();
+			}
+			if (drewGlowLines) {
+				mc.renderBuffers().bufferSource().endBatch(glowLineRenderType);
 			}
 		}
 	}
 
 	private record EmberLineNode(BlockPos pos, UUID subLevelId) {
+	}
+
+	private static void rememberLastEmitter(BlockEntity emitter) {
+		lastEmitter = emitter.getBlockPos();
+		lastEmitterSubLevel = SubLevelCompat.getContainingSubLevelId(emitter);
+		lastEmitterSeenTick = ticks;
+	}
+
+	private static void clearLastEmitter() {
+		lastEmitter = null;
+		lastEmitterSubLevel = null;
+		lastEmitterSeenTick = Integer.MIN_VALUE;
+	}
+
+	private static boolean matchesLineNode(EmberLineNode node, BlockPos pos, UUID subLevelId) {
+		return node != null && pos != null && node.pos().equals(pos) && (node.subLevelId() == null ? subLevelId == null : node.subLevelId().equals(subLevelId));
 	}
 
 	private static EmberLineNode drawEmittingLine(RenderLevelStageEvent event, Level level, Minecraft mc, Shapes.DoubleLineConsumer lineDrawer, EmberLineNode emitterNode, Direction side) {
@@ -543,7 +584,7 @@ public class EmbersClientEvents {	public static int ticks = 0;
 					tickStartedHoldingCtrl = Integer.MAX_VALUE;
 				}
 				float intensity = (float) (5.0f * (1 - Math.sqrt(1 - Math.pow(openProgress / ((float) ConfigManager.TICKS_TO_OPEN_CODEX.get()), 2)))) - 1.0f;
-				event.getTooltipElements().add(1, Either.right(new GlowingTextTooltip(Component.translatable(Embers.MODID + ".tooltip.research").withStyle(ChatFormatting.DARK_GRAY), intensity)));
+				event.getTooltipElements().add(1, Either.right(new GlowingTextTooltip(Component.translatable(Embers.MODID + ".tooltip.research").withStyle(ChatFormatting.GRAY), intensity)));
 				if (openProgress >= ConfigManager.TICKS_TO_OPEN_CODEX.get()) {
 					if (ConfigManager.CODEX_REQUIRED_FOR_LOOKUP.get())
 						mc.player.getInventory().selected = codexIndex;
@@ -591,21 +632,34 @@ public class EmbersClientEvents {	public static int ticks = 0;
 	public static RenderTarget depthBuffer;
 
 	public static void onWorldRender(RenderLevelStageEvent event) {
-		if (event.getStage().equals(RenderLevelStageEvent.Stage.AFTER_TRIPWIRE_BLOCKS) && Minecraft.useFancyGraphics()) {
+		if (!event.getStage().equals(RenderLevelStageEvent.Stage.AFTER_TRIPWIRE_BLOCKS)) {
+			return;
+		}
 
-			Minecraft mc = Minecraft.getInstance();
+		if (!Minecraft.useFancyGraphics() || EmbersRenderTypes.isShaderPackActive()) {
+			releaseDepthBuffer();
+			return;
+		}
 
-			if (depthBuffer == null) {
-				depthBuffer = new TextureTarget(mc.getMainRenderTarget().width, mc.getMainRenderTarget().height, true, Minecraft.ON_OSX);
-			}
+		Minecraft mc = Minecraft.getInstance();
 
-			if (mc.getMainRenderTarget().isStencilEnabled()) {
-				depthBuffer.enableStencil();
-			}
+		if (depthBuffer == null) {
+			depthBuffer = new TextureTarget(mc.getMainRenderTarget().width, mc.getMainRenderTarget().height, true, Minecraft.ON_OSX);
+		}
 
-			RenderTarget mainRenderTarget = mc.getMainRenderTarget();
-			depthBuffer.copyDepthFrom(mainRenderTarget);
-			GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, mainRenderTarget.frameBufferId);
+		if (mc.getMainRenderTarget().isStencilEnabled()) {
+			depthBuffer.enableStencil();
+		}
+
+		RenderTarget mainRenderTarget = mc.getMainRenderTarget();
+		depthBuffer.copyDepthFrom(mainRenderTarget);
+		GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, mainRenderTarget.frameBufferId);
+	}
+
+	private static void releaseDepthBuffer() {
+		if (depthBuffer != null) {
+			depthBuffer.destroyBuffers();
+			depthBuffer = null;
 		}
 	}
 }

@@ -1,16 +1,20 @@
 package com.rekindled.embers.particle;
 
+import java.util.Optional;
+
 import com.rekindled.embers.render.EmbersRenderTypes;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.core.particles.ParticleGroup;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class StarParticle extends TextureSheetParticle {
+	private final Optional<ParticleGroup> particleGroup = EmbersRenderTypes.emberParticleGroup();
 
 	public float rBase = 1.0F;
 	public float gBase = 1.0F;
@@ -62,8 +66,13 @@ public class StarParticle extends TextureSheetParticle {
 	}
 
 	@Override
+	public Optional<ParticleGroup> getParticleGroup() {
+		return this.particleGroup;
+	}
+
+	@Override
 	public ParticleRenderType getRenderType() {
-		return EmbersRenderTypes.PARTICLE_SHEET_EMBER;
+		return EmbersRenderTypes.emberParticleSheet();
 	}
 
 	@OnlyIn(Dist.CLIENT)

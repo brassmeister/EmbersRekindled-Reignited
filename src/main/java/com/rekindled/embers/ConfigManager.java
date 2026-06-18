@@ -3,6 +3,8 @@ package com.rekindled.embers;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
 import net.neoforged.neoforge.fluids.FluidType;
@@ -58,6 +60,7 @@ public class ConfigManager {
 
 	public static ConfigValue<Boolean> CODEX_PROGRESSION;
 	public static ConfigValue<Boolean> PVP_EVERYBODY_IS_ENEMY;
+	public static ConfigValue<Boolean> REDSTONE_CONTROL_INVERTED;
 	public static ConfigValue<List<? extends String>> TAG_PREFERENCES;
 	public static ConfigValue<List<? extends String>> ITEM_PREFERENCES;
 
@@ -82,6 +85,11 @@ public class ConfigManager {
 				return Double.parseDouble(values[1]);
 		}
 		return 1.0;
+	}
+
+	public static boolean isRedstoneControlActive(Level level, BlockPos pos) {
+		boolean powered = level.hasNeighborSignal(pos);
+		return REDSTONE_CONTROL_INVERTED != null && REDSTONE_CONTROL_INVERTED.get() ? !powered : powered;
 	}
 
 	public static void register(ModContainer container) {
@@ -181,6 +189,8 @@ public class ConfigManager {
 		CODEX_PROGRESSION = COMMON.comment("Codex entries need to be completed before the next one unlocks.").define("codexProgression", true);
 
 		PVP_EVERYBODY_IS_ENEMY = COMMON.comment("If true, Embers homing projectiles will go for neutral players.").define("everybodyIsEnemy", false);
+
+		REDSTONE_CONTROL_INVERTED = COMMON.comment("If true, redstone-controlled Embers blocks run without a signal and turn off while powered. If false, they require a redstone signal like classic Embers.").define("redstone.inverted_controls", false);
 
 		List<String> preferences = new ArrayList<String>();
 		preferences.add(0, "minecraft");

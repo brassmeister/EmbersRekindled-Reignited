@@ -1,17 +1,21 @@
 package com.rekindled.embers.particle;
 
+import java.util.Optional;
+
 import com.rekindled.embers.render.EmbersRenderTypes;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class VaporParticle extends TextureSheetParticle {
+	private final Optional<ParticleGroup> particleGroup = EmbersRenderTypes.emberParticleGroup();
 
 	public float minScale = 0.5f;
 	public float maxScale = 2.0f;
@@ -53,8 +57,13 @@ public class VaporParticle extends TextureSheetParticle {
 	}
 
 	@Override
+	public Optional<ParticleGroup> getParticleGroup() {
+		return this.particleGroup;
+	}
+
+	@Override
 	public ParticleRenderType getRenderType() {
-		return EmbersRenderTypes.PARTICLE_SHEET_ADDITIVE;
+		return EmbersRenderTypes.additiveParticleSheet();
 	}
 
 	@OnlyIn(Dist.CLIENT)

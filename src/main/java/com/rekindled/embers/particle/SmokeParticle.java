@@ -1,16 +1,20 @@
 package com.rekindled.embers.particle;
 
+import java.util.Optional;
+
 import com.rekindled.embers.render.EmbersRenderTypes;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.core.particles.ParticleGroup;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class SmokeParticle extends TextureSheetParticle {
+	private final Optional<ParticleGroup> particleGroup = EmbersRenderTypes.emberParticleGroup();
 
 	public float rotScale = random.nextFloat() * 0.1f + 0.05f;
 
@@ -44,8 +48,13 @@ public class SmokeParticle extends TextureSheetParticle {
 	}
 
 	@Override
+	public Optional<ParticleGroup> getParticleGroup() {
+		return this.particleGroup;
+	}
+
+	@Override
 	public ParticleRenderType getRenderType() {
-		return EmbersRenderTypes.PARTICLE_SHEET_TRANSLUCENT_NODEPTH;
+		return EmbersRenderTypes.translucentNoDepthParticleSheet();
 	}
 
 	@OnlyIn(Dist.CLIENT)

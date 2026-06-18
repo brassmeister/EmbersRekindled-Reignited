@@ -37,6 +37,7 @@ public class ItemTransferBlockEntity extends ItemPipeBlockEntityBase {
 	Random random = new Random();
 	public boolean syncFilter = true;
 	IItemHandler outputSide;
+	IItemHandler[] sideHandlers;
 	public LazyOptional<IItemHandler> outputHolder = LazyOptional.of(() -> outputSide);
 
 	IFilter filter = FilterUtil.FILTER_ANY;
@@ -74,6 +75,43 @@ public class ItemTransferBlockEntity extends ItemPipeBlockEntityBase {
 			}
 		};
 		outputSide = Misc.makeRestrictedItemHandler(inventory, false, true);
+		sideHandlers = new IItemHandler[Direction.values().length];
+		for (Direction facing : Direction.values()) {
+			sideHandlers[facing.get3DDataValue()] = new IItemHandler() {
+				@Override
+				public int getSlots() {
+					return inventory.getSlots();
+				}
+
+				@Override
+				public ItemStack getStackInSlot(int slot) {
+					return inventory.getStackInSlot(slot);
+				}
+
+				@Override
+				public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+					if (!ItemTransferBlockEntity.this.acceptsItem(stack)) {
+						return stack;
+					}
+					return PipeNetworkUtil.routeItem(ItemTransferBlockEntity.this, facing, stack, simulate);
+				}
+
+				@Override
+				public ItemStack extractItem(int slot, int amount, boolean simulate) {
+					return inventory.extractItem(slot, amount, simulate);
+				}
+
+				@Override
+				public int getSlotLimit(int slot) {
+					return inventory.getSlotLimit(slot);
+				}
+
+				@Override
+				public boolean isItemValid(int slot, ItemStack stack) {
+					return ItemTransferBlockEntity.this.acceptsItem(stack);
+				}
+			};
+		}
 	}
 
 	public boolean acceptsItem(ItemStack stack) {
@@ -115,7 +153,7 @@ public class ItemTransferBlockEntity extends ItemPipeBlockEntityBase {
 	}
 
 	private void writeFilter(CompoundTag nbt, HolderLookup.Provider registries) {
-		nbt.put("filter", filterItem.save(registries));
+		nbt.put("filter", filterItem.saveOptional(registries));
 	}
 
 	public void setupFilter() {
@@ -154,7 +192,7 @@ public class ItemTransferBlockEntity extends ItemPipeBlockEntityBase {
 				if (side.getOpposite() == facing)
 					return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, outputHolder);
 				else if (side.getAxis() == facing.getAxis())
-					return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, holder);
+					return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, LazyOptional.of(() -> this.sideHandlers[side.get3DDataValue()]));
 			}
 		}
 		return LazyOptional.empty();

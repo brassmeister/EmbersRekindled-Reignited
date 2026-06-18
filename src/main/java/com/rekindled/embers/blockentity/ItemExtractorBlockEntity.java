@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.filter.FilterAny;
@@ -17,6 +18,7 @@ import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
 import com.rekindled.embers.api.tile.IOrderDestination;
 import com.rekindled.embers.api.tile.IOrderSource;
 import com.rekindled.embers.api.tile.OrderStack;
+import com.rekindled.embers.compat.sublevel.SubLevelCompat;
 import com.rekindled.embers.particle.VaporParticleOptions;
 import com.rekindled.embers.util.EmbersColors;
 
@@ -69,11 +71,9 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 				@Nonnull
 				@Override
 				public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-					if (active)
+					if (isExtractionActive())
 						return stack;
-					if (!simulate)
-						setFrom(facing, true);
-					return inventory.insertItem(slot, stack, simulate);
+					return PipeNetworkUtil.routeItem(ItemExtractorBlockEntity.this, facing, stack, simulate);
 				}
 
 				@Nonnull
@@ -120,6 +120,8 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 	public static IFilter FILTER_ANY = new FilterAny();
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, ItemExtractorBlockEntity blockEntity) {
+		if (!blockEntity.loaded)
+			blockEntity.initConnections();
 		if (level instanceof ServerLevel && blockEntity.clogged && blockEntity.isAnySideUnclogged()) {
 			Random posRand = new Random(pos.asLong());
 			double angleA = posRand.nextDouble() * Math.PI * 2;
@@ -134,7 +136,8 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 			((ServerLevel) level).sendParticles(new VaporParticleOptions(EmbersColors.VAPOR_ID, new Vec3(vx, vy, vz), 1.0f), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 4, 0, 0, 0, 1.0);
 		}
 		blockEntity.cleanupOrders();
-		blockEntity.active = level.hasNeighborSignal(pos);
+		blockEntity.active = ConfigManager.isRedstoneControlActive(level, pos);
+		boolean moved = blockEntity.routeBufferedItem();
 		OrderStack currentOrder = blockEntity.orders.isEmpty() ? null : blockEntity.orders.get(0);
 		IFilter filter = /*FilterUtil.*/FILTER_ANY;
 		if (blockEntity.active)
@@ -149,37 +152,81 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 				invDest = destination.getItemHandler();
 		}
 
-		for (Direction facing : Direction.values()) {
-			if (!blockEntity.getConnection(facing).transfer)
-				continue;
-			BlockEntity tile = level.getBlockEntity(pos.relative(facing));
+		if (blockEntity.active || (currentOrder != null && currentOrder.getSize() > 0)) {
+			moved |= blockEntity.extractAndRoute(filter, invDest, currentOrder);
+		}
+		blockEntity.updateRouteState(moved);
+	}
 
-			if (tile != null && !(tile instanceof ItemPipeBlockEntityBase)) {
-				IItemHandler handler = com.rekindled.embers.util.CapabilityCompat.getCapability(tile, ForgeCapabilities.ITEM_HANDLER, facing.getOpposite()).orElse(null);
-				if (handler != null && (blockEntity.active || (currentOrder != null && currentOrder.getSize() > 0))) {
-					int slot = -1;
-					for (int j = 0; j < handler.getSlots() && slot == -1; j++) {
-						ItemStack extracted = handler.extractItem(j, 1, true);
-						if (!extracted.isEmpty() && filter.acceptsItem(extracted,invDest)) {
-							slot = j;
-						}
+	private boolean routeBufferedItem() {
+		ItemStack stored = inventory.extractItem(0, getCapacity(), true);
+		if (stored.isEmpty()) {
+			return false;
+		}
+		ItemStack remainder = PipeNetworkUtil.routeItem(this, null, stored, false);
+		int moved = stored.getCount() - remainder.getCount();
+		if (moved > 0) {
+			inventory.extractItem(0, moved, false);
+		}
+		return moved > 0;
+	}
+
+	private boolean isExtractionActive() {
+		return level != null ? ConfigManager.isRedstoneControlActive(level, worldPosition) : active;
+	}
+
+	private boolean extractAndRoute(IFilter filter, IItemHandler invDest, OrderStack currentOrder) {
+		for (Direction facing : Direction.values()) {
+			if (!getConnection(facing).transfer) {
+				continue;
+			}
+			BlockEntity tile = SubLevelCompat.findAdjacent(this, facing);
+			if (tile == null || tile instanceof ItemPipeBlockEntityBase) {
+				continue;
+			}
+			IItemHandler handler = com.rekindled.embers.util.CapabilityCompat.getCapability(tile, ForgeCapabilities.ITEM_HANDLER, facing.getOpposite()).orElse(null);
+			if (handler == null) {
+				continue;
+			}
+			for (int slot = 0; slot < handler.getSlots(); slot++) {
+				ItemStack extracted = handler.extractItem(slot, 1, true);
+				if (extracted.isEmpty() || !filter.acceptsItem(extracted, invDest)) {
+					continue;
+				}
+				if (!PipeNetworkUtil.routeItem(this, facing, extracted, true).isEmpty()) {
+					continue;
+				}
+				ItemStack drained = handler.extractItem(slot, 1, false);
+				if (drained.isEmpty()) {
+					continue;
+				}
+				ItemStack remainder = PipeNetworkUtil.routeItem(this, facing, drained, false);
+				int moved = drained.getCount() - remainder.getCount();
+				if (!remainder.isEmpty()) {
+					inventory.insertItem(0, remainder, false);
+				}
+				if (moved > 0) {
+					if (currentOrder != null) {
+						currentOrder.deplete(moved);
 					}
-					if (slot != -1) {
-						ItemStack extracted = handler.extractItem(slot, 1, true);
-						if (blockEntity.inventory.insertItem(0, extracted, true).isEmpty()) {
-							handler.extractItem(slot, 1, false);
-							blockEntity.inventory.insertItem(0, extracted, false);
-							if(currentOrder != null)
-								currentOrder.deplete(extracted.getCount());
-						}
-					}
-					blockEntity.setFrom(facing, true);
-				} else {
-					blockEntity.setFrom(facing, false);
+					return true;
 				}
 			}
 		}
-		ItemPipeBlockEntityBase.serverTick(level, pos, state, blockEntity);
+		return false;
+	}
+
+	private void updateRouteState(boolean moved) {
+		if (!moved && lastTransfer != null) {
+			lastTransfer = null;
+			syncTransfer = true;
+			setChanged();
+		}
+		if (clogged && moved) {
+			clogged = false;
+			syncCloggedFlag = true;
+			setChanged();
+		}
 	}
 
 	public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {

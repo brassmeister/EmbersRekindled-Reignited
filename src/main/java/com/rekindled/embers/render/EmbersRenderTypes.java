@@ -1,6 +1,15 @@
 package com.rekindled.embers.render;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.Properties;
 import java.util.function.Function;
 
 import org.joml.Matrix4f;
@@ -25,6 +34,7 @@ import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.core.particles.ParticleGroup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 
@@ -41,32 +51,297 @@ public class EmbersRenderTypes extends RenderType {
 	public static ShaderInstance mithrilShader;
 	public static final ShaderStateShard MITHRIL_SHADER = new ShaderStateShard(() -> mithrilShader);
 	private static final ResourceLocation PARTICLE_ATLAS = ResourceLocation.withDefaultNamespace("textures/atlas/particles.png");
+	private static final Method IRIS_API_GET_INSTANCE = findMethod("net.irisshaders.iris.api.v0.IrisApi", "getInstance");
+	private static final Method IRIS_API_IS_SHADER_PACK_IN_USE = findMethod("net.irisshaders.iris.api.v0.IrisApi", "isShaderPackInUse");
+	private static final Method IRIS_GET_CURRENT_PACK_NAME = findMethod("net.irisshaders.iris.Iris", "getCurrentPackName");
+	private static final Method IRIS_IS_PACK_IN_USE_QUICK = findMethod("net.irisshaders.iris.Iris", "isPackInUseQuick");
+	private static final Method IRIS_GET_IRIS_CONFIG = findMethod("net.irisshaders.iris.Iris", "getIrisConfig");
+	private static final Method IRIS_CONFIG_GET_SHADER_PACK_NAME = findMethod("net.irisshaders.iris.config.IrisConfig", "getShaderPackName");
+	private static final Method LEGACY_IRIS_GET_CURRENT_PACK_NAME = findMethod("net.coderbot.iris.Iris", "getCurrentPackName");
+	private static final Method LEGACY_IRIS_IS_PACK_IN_USE_QUICK = findMethod("net.coderbot.iris.Iris", "isPackInUseQuick");
+	private static final Method LEGACY_IRIS_GET_IRIS_CONFIG = findMethod("net.coderbot.iris.Iris", "getIrisConfig");
+	private static final Method LEGACY_IRIS_CONFIG_GET_SHADER_PACK_NAME = findMethod("net.coderbot.iris.config.IrisConfig", "getShaderPackName");
+	private static final Field OPTIFINE_SHADER_PACK_LOADED = findField("net.optifine.shaders.Shaders", "shaderPackLoaded");
+	private static final ParticleGroup SHADER_PARTICLE_GROUP = new ParticleGroup(2048);
+	private static final ParticleGroup UNBOUND_SHADER_PARTICLE_GROUP = new ParticleGroup(96);
+	private static boolean shaderPackActiveCache = false;
+	private static long shaderPackActiveCacheTime = -1000L;
+	private static String shaderPackNameCache = null;
+	private static long shaderPackNameCacheTime = -1000L;
 
 	public EmbersRenderTypes(String pName, VertexFormat pFormat, Mode pMode, int pBufferSize, boolean pAffectsCrumbling, boolean pSortOnUpload, Runnable pSetupState, Runnable pClearState) {
 		super(pName, pFormat, pMode, pBufferSize, pAffectsCrumbling, pSortOnUpload, pSetupState, pClearState);
 	}
 
 	public static void applyParticleUniforms(ShaderInstance shader, float offset, float fade, float alphaCutoff) {
-		RenderSystem.getShader().setSampler("DepthBuffer", EmbersClientEvents.depthBuffer.getDepthTextureId());
-		RenderSystem.getShader().safeGetUniform("ProjMatInv").set(new Matrix4f(RenderSystem.getProjectionMatrix()).invert());
-		RenderSystem.getShader().safeGetUniform("Offset").set(offset);
-		RenderSystem.getShader().safeGetUniform("Fade").set(fade);
-		RenderSystem.getShader().safeGetUniform("AlphaCutoff").set(alphaCutoff);
+		if (shader == null || EmbersClientEvents.depthBuffer == null) {
+			return;
+		}
+		shader.setSampler("DepthBuffer", EmbersClientEvents.depthBuffer.getDepthTextureId());
+		shader.safeGetUniform("ProjMatInv").set(new Matrix4f(RenderSystem.getProjectionMatrix()).invert());
+		shader.safeGetUniform("Offset").set(offset);
+		shader.safeGetUniform("Fade").set(fade);
+		shader.safeGetUniform("AlphaCutoff").set(alphaCutoff);
+	}
+
+	private static boolean shouldUseSoftParticles(GraphicsStatus minimumGraphics) {
+		return !ConfigManager.RENDER_FALLBACK.get()
+				&& EmbersClientEvents.depthBuffer != null
+				&& !isShaderPackActive()
+				&& Minecraft.getInstance().options.graphicsMode().get().getId() >= minimumGraphics.getId();
+	}
+
+	public static ParticleRenderType additiveParticleSheet() {
+		return shaderSafeParticleSheet(PARTICLE_SHEET_ADDITIVE);
+	}
+
+	public static ParticleRenderType emberRoughParticleSheet() {
+		return shaderSafeParticleSheet(PARTICLE_SHEET_EMBER_ROUGH);
+	}
+
+	public static ParticleRenderType emberParticleSheet() {
+		return shaderSafeParticleSheet(PARTICLE_SHEET_EMBER);
+	}
+
+	public static ParticleRenderType emberHardParticleSheet() {
+		return shaderSafeParticleSheet(PARTICLE_SHEET_EMBER_HARD);
+	}
+
+	public static ParticleRenderType additiveXRayParticleSheet() {
+		return shaderSafeParticleSheet(PARTICLE_SHEET_ADDITIVE_XRAY);
+	}
+
+	public static ParticleRenderType translucentNoDepthParticleSheet() {
+		return shaderSafeParticleSheet(PARTICLE_SHEET_TRANSLUCENT_NODEPTH);
+	}
+
+	public static Optional<ParticleGroup> emberParticleGroup() {
+		if (isComplementaryUnboundShaderPack()) {
+			return Optional.of(UNBOUND_SHADER_PARTICLE_GROUP);
+		}
+		return isShaderPackActive() ? Optional.of(SHADER_PARTICLE_GROUP) : Optional.empty();
+	}
+
+	public static RenderType glowLines() {
+		return isComplementaryUnboundShaderPack() ? RenderType.lines() : GLOW_LINES;
+	}
+
+	public static RenderType fieldChart() {
+		return ConfigManager.RENDER_FALLBACK.get() || isShaderPackActive() ? FIELD_CHART_FALLBACK : FIELD_CHART;
+	}
+
+	private static ShaderInstance getEmberParticleShader() {
+		int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
+		return fancyness >= GraphicsStatus.FABULOUS.getId() ? emberParticleFabShader : emberParticleShader;
+	}
+
+	private static boolean setupSoftParticleShader(ShaderInstance shader, float offset, float fade, float alphaCutoff) {
+		if (shader == null) {
+			return false;
+		}
+		RenderSystem.setShader(() -> shader);
+		applyParticleUniforms(shader, offset, fade, alphaCutoff);
+		return true;
+	}
+
+	private static ParticleRenderType shaderSafeParticleSheet(ParticleRenderType renderType) {
+		return isComplementaryUnboundShaderPack() ? ParticleRenderType.NO_RENDER : renderType;
+	}
+
+	private static BufferBuilder skipParticleSheetForShaderPack() {
+		RenderSystem.enableDepthTest();
+		RenderSystem.depthMask(true);
+		RenderSystem.defaultBlendFunc();
+		return null;
+	}
+
+	public static boolean isShaderPackActive() {
+		long now = Util.getMillis();
+		if (now - shaderPackActiveCacheTime < 1000L) {
+			return shaderPackActiveCache;
+		}
+		shaderPackActiveCache = isIrisShaderPackActive() || invokeStaticBoolean(IRIS_IS_PACK_IN_USE_QUICK) || invokeStaticBoolean(LEGACY_IRIS_IS_PACK_IN_USE_QUICK) || readStaticBoolean(OPTIFINE_SHADER_PACK_LOADED);
+		shaderPackActiveCacheTime = now;
+		return shaderPackActiveCache;
+	}
+
+	public static boolean isComplementaryUnboundShaderPack() {
+		if (!isShaderPackActive()) {
+			return false;
+		}
+		String packName = getActiveShaderPackName();
+		if (packName == null) {
+			return false;
+		}
+		String normalizedPackName = packName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+		return normalizedPackName.contains("complementaryunbound") || normalizedPackName.contains("complimentaryunbound");
+	}
+
+	public static String getActiveShaderPackName() {
+		long now = Util.getMillis();
+		if (now - shaderPackNameCacheTime < 1000L) {
+			return shaderPackNameCache;
+		}
+		shaderPackNameCache = findActiveShaderPackName();
+		shaderPackNameCacheTime = now;
+		return shaderPackNameCache;
+	}
+
+	private static boolean isIrisShaderPackActive() {
+		if (IRIS_API_GET_INSTANCE == null || IRIS_API_IS_SHADER_PACK_IN_USE == null) {
+			return false;
+		}
+		try {
+			Object irisApi = IRIS_API_GET_INSTANCE.invoke(null);
+			return Boolean.TRUE.equals(IRIS_API_IS_SHADER_PACK_IN_USE.invoke(irisApi));
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static String findActiveShaderPackName() {
+		String packName = invokeStaticString(IRIS_GET_CURRENT_PACK_NAME);
+		if (packName != null) {
+			return packName;
+		}
+		packName = invokeStaticString(LEGACY_IRIS_GET_CURRENT_PACK_NAME);
+		if (packName != null) {
+			return packName;
+		}
+		packName = invokeConfigShaderPackName(IRIS_GET_IRIS_CONFIG, IRIS_CONFIG_GET_SHADER_PACK_NAME);
+		if (packName != null) {
+			return packName;
+		}
+		packName = invokeConfigShaderPackName(LEGACY_IRIS_GET_IRIS_CONFIG, LEGACY_IRIS_CONFIG_GET_SHADER_PACK_NAME);
+		if (packName != null) {
+			return packName;
+		}
+		return readConfiguredShaderPackName();
+	}
+
+	private static String invokeStaticString(Method method) {
+		if (method == null) {
+			return null;
+		}
+		try {
+			return cleanShaderPackName(unwrapString(method.invoke(null)));
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	private static String invokeConfigShaderPackName(Method configMethod, Method shaderPackNameMethod) {
+		if (configMethod == null || shaderPackNameMethod == null) {
+			return null;
+		}
+		try {
+			Object config = configMethod.invoke(null);
+			return config == null ? null : cleanShaderPackName(unwrapString(shaderPackNameMethod.invoke(config)));
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	private static String unwrapString(Object value) {
+		if (value instanceof Optional<?> optional) {
+			return optional.map(Object::toString).orElse(null);
+		}
+		return value == null ? null : value.toString();
+	}
+
+	private static String cleanShaderPackName(String shaderPackName) {
+		if (shaderPackName == null) {
+			return null;
+		}
+		String trimmedName = shaderPackName.trim();
+		return trimmedName.isEmpty() || trimmedName.equalsIgnoreCase("off") ? null : trimmedName;
+	}
+
+	@SuppressWarnings("resource")
+	private static String readConfiguredShaderPackName() {
+		Minecraft minecraft = Minecraft.getInstance();
+		if (minecraft == null || minecraft.gameDirectory == null) {
+			return null;
+		}
+		Path configDirectory = minecraft.gameDirectory.toPath().resolve("config");
+		String packName = readConfiguredShaderPackName(configDirectory.resolve("iris.properties"));
+		return packName != null ? packName : readConfiguredShaderPackName(configDirectory.resolve("oculus.properties"));
+	}
+
+	private static String readConfiguredShaderPackName(Path configPath) {
+		if (!Files.isRegularFile(configPath)) {
+			return null;
+		}
+		Properties properties = new Properties();
+		try (Reader reader = Files.newBufferedReader(configPath)) {
+			properties.load(reader);
+		} catch (IOException | RuntimeException | LinkageError e) {
+			return null;
+		}
+		String packName = properties.getProperty("shaderPack");
+		if (packName == null) {
+			packName = properties.getProperty("shaderPackName");
+		}
+		if (packName == null) {
+			packName = properties.getProperty("currentShaderPack");
+		}
+		return cleanShaderPackName(packName);
+	}
+
+	private static boolean invokeStaticBoolean(Method method) {
+		if (method == null) {
+			return false;
+		}
+		try {
+			return Boolean.TRUE.equals(method.invoke(null));
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static boolean readStaticBoolean(Field field) {
+		if (field == null) {
+			return false;
+		}
+		try {
+			return field.getBoolean(null);
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static Method findMethod(String className, String methodName) {
+		try {
+			Method method = Class.forName(className, false, EmbersRenderTypes.class.getClassLoader()).getMethod(methodName);
+			method.setAccessible(true);
+			return method;
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	private static Field findField(String className, String fieldName) {
+		try {
+			Field field = Class.forName(className, false, EmbersRenderTypes.class.getClassLoader()).getDeclaredField(fieldName);
+			field.setAccessible(true);
+			return field;
+		} catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			return null;
+		}
 	}
 
 	//render type used for additive particles
 	public static ParticleRenderType PARTICLE_SHEET_ADDITIVE = new ParticleRenderType() {
 		@SuppressWarnings("resource")
 		public BufferBuilder begin(Tesselator p_107455_, TextureManager p_107456_) {
+			if (isComplementaryUnboundShaderPack()) {
+				return skipParticleSheetForShaderPack();
+			}
 			RenderSystem.enableDepthTest();
 			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 			RenderSystem.depthMask(false);
-			if (!ConfigManager.RENDER_FALLBACK.get()) {
-				int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
-				if (fancyness >= GraphicsStatus.FANCY.getId()) {
-					EMBER_PARTICLE_SHADER.setupRenderState();
-					applyParticleUniforms(emberParticleShader, 0.0f, 3.0f / 16.0f, 0.0f);
-				}
+			if (shouldUseSoftParticles(GraphicsStatus.FANCY)) {
+				setupSoftParticleShader(emberParticleShader, 0.0f, 3.0f / 16.0f, 0.0f);
 			}
 			RenderSystem.setShaderTexture(0, PARTICLE_ATLAS);
 			RenderSystem.enableBlend();
@@ -84,17 +359,14 @@ public class EmbersRenderTypes extends RenderType {
 	public static ParticleRenderType PARTICLE_SHEET_EMBER_ROUGH = new ParticleRenderType() {
 		@SuppressWarnings("resource")
 		public BufferBuilder begin(Tesselator p_107455_, TextureManager p_107456_) {
+			if (isComplementaryUnboundShaderPack()) {
+				return skipParticleSheetForShaderPack();
+			}
 			RenderSystem.enableDepthTest();
 			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 			RenderSystem.depthMask(false);
-			if (!ConfigManager.RENDER_FALLBACK.get()) {
-				int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
-				if (fancyness >= GraphicsStatus.FANCY.getId()) {
-					if (fancyness >= GraphicsStatus.FABULOUS.getId())
-						EMBER_PARTICLE_FAB_SHADER.setupRenderState();
-					else
-						EMBER_PARTICLE_SHADER.setupRenderState();
-					applyParticleUniforms(RenderSystem.getShader(), 1.0f / 16.0f, 2.0f / 16.0f, 0.1f);
+			if (shouldUseSoftParticles(GraphicsStatus.FANCY)) {
+				if (setupSoftParticleShader(getEmberParticleShader(), 1.0f / 16.0f, 2.0f / 16.0f, 0.1f)) {
 					RenderSystem.disableDepthTest();
 				}
 			}
@@ -114,17 +386,14 @@ public class EmbersRenderTypes extends RenderType {
 	public static ParticleRenderType PARTICLE_SHEET_EMBER = new ParticleRenderType() {
 		@SuppressWarnings("resource")
 		public BufferBuilder begin(Tesselator p_107455_, TextureManager p_107456_) {
+			if (isComplementaryUnboundShaderPack()) {
+				return skipParticleSheetForShaderPack();
+			}
 			RenderSystem.enableDepthTest();
 			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 			RenderSystem.depthMask(false);
-			if (!ConfigManager.RENDER_FALLBACK.get()) {
-				int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
-				if (fancyness >= GraphicsStatus.FANCY.getId()) {
-					if (fancyness >= GraphicsStatus.FABULOUS.getId())
-						EMBER_PARTICLE_FAB_SHADER.setupRenderState();
-					else
-						EMBER_PARTICLE_SHADER.setupRenderState();
-					applyParticleUniforms(RenderSystem.getShader(), 3.0f / 16.0f, 5.0f / 16.0f, 0.0f);
+			if (shouldUseSoftParticles(GraphicsStatus.FANCY)) {
+				if (setupSoftParticleShader(getEmberParticleShader(), 3.0f / 16.0f, 5.0f / 16.0f, 0.0f)) {
 					RenderSystem.disableDepthTest();
 				}
 			}
@@ -144,15 +413,14 @@ public class EmbersRenderTypes extends RenderType {
 	public static ParticleRenderType PARTICLE_SHEET_EMBER_HARD = new ParticleRenderType() {
 		@SuppressWarnings("resource")
 		public BufferBuilder begin(Tesselator p_107455_, TextureManager p_107456_) {
+			if (isComplementaryUnboundShaderPack()) {
+				return skipParticleSheetForShaderPack();
+			}
 			RenderSystem.enableDepthTest();
 			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 			RenderSystem.depthMask(false);
-			if (!ConfigManager.RENDER_FALLBACK.get()) {
-				int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
-				if (fancyness >= GraphicsStatus.FABULOUS.getId()) {
-					EMBER_PARTICLE_FAB_SHADER.setupRenderState();
-					applyParticleUniforms(emberParticleFabShader, 0.0f, 0.0f, 0.0f);
-				}
+			if (shouldUseSoftParticles(GraphicsStatus.FABULOUS)) {
+				setupSoftParticleShader(emberParticleFabShader, 0.0f, 0.0f, 0.0f);
 			}
 			RenderSystem.setShaderTexture(0, PARTICLE_ATLAS);
 			RenderSystem.enableBlend();
@@ -170,18 +438,14 @@ public class EmbersRenderTypes extends RenderType {
 	public static ParticleRenderType PARTICLE_SHEET_ADDITIVE_XRAY = new ParticleRenderType() {
 		@SuppressWarnings("resource")
 		public BufferBuilder begin(Tesselator p_107455_, TextureManager p_107456_) {
+			if (isComplementaryUnboundShaderPack()) {
+				return skipParticleSheetForShaderPack();
+			}
 			RenderSystem.enableDepthTest();
 			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 			RenderSystem.depthMask(false);
-			if (!ConfigManager.RENDER_FALLBACK.get()) {
-				int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
-				if (fancyness >= GraphicsStatus.FANCY.getId()) {
-					if (fancyness >= GraphicsStatus.FABULOUS.getId())
-						EMBER_PARTICLE_FAB_SHADER.setupRenderState();
-					else
-						EMBER_PARTICLE_SHADER.setupRenderState();
-					applyParticleUniforms(RenderSystem.getShader(), 50.0f, 40.0f, 0.0f);
-				}
+			if (shouldUseSoftParticles(GraphicsStatus.FANCY)) {
+				setupSoftParticleShader(getEmberParticleShader(), 50.0f, 40.0f, 0.0f);
 			}
 			RenderSystem.disableDepthTest();
 			RenderSystem.setShaderTexture(0, PARTICLE_ATLAS);
@@ -199,15 +463,14 @@ public class EmbersRenderTypes extends RenderType {
 	public static ParticleRenderType PARTICLE_SHEET_TRANSLUCENT_NODEPTH = new ParticleRenderType() {
 		@SuppressWarnings("resource")
 		public BufferBuilder begin(Tesselator p_107455_, TextureManager p_107456_) {
+			if (isComplementaryUnboundShaderPack()) {
+				return skipParticleSheetForShaderPack();
+			}
 			RenderSystem.enableDepthTest();
 			Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
 			RenderSystem.depthMask(false);
-			if (!ConfigManager.RENDER_FALLBACK.get()) {
-				int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
-				if (fancyness >= GraphicsStatus.FANCY.getId()) {
-					TRANSLUCENT_PARTICLE_SHADER.setupRenderState();
-					applyParticleUniforms(translucentParticleShader, 0.0f, 3.0f / 16.0f, 0.0f);
-				}
+			if (shouldUseSoftParticles(GraphicsStatus.FANCY)) {
+				setupSoftParticleShader(translucentParticleShader, 0.0f, 3.0f / 16.0f, 0.0f);
 			}
 			RenderSystem.setShaderTexture(0, PARTICLE_ATLAS);
 			RenderSystem.enableBlend();

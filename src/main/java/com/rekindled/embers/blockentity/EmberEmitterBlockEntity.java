@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.capabilities.EmbersCapabilities;
@@ -165,7 +166,7 @@ public class EmberEmitterBlockEntity extends BlockEntity implements IEmberPacket
 
 	public boolean canSendBurst() {
 		refreshTrackedTarget();
-		if (!level.hasNeighborSignal(worldPosition) || target == null || level.isClientSide) {
+		if (!ConfigManager.isRedstoneControlActive(level, worldPosition) || target == null || level.isClientSide) {
 			return false;
 		}
 		BlockEntity targetTile = SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);

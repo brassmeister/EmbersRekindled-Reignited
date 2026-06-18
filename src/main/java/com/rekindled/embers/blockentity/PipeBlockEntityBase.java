@@ -64,6 +64,14 @@ public class PipeBlockEntityBase extends BlockEntity {
 		super(pType, pPos, pBlockState);
 	}
 
+	@Override
+	public void onLoad() {
+		super.onLoad();
+		if (level != null && !level.isClientSide && !loaded) {
+			initConnections();
+		}
+	}
+
 	public void setFrom(Direction facing, boolean flag) {
 		from[facing.get3DDataValue()] = flag;
 	}
@@ -139,10 +147,22 @@ public class PipeBlockEntityBase extends BlockEntity {
 		return ModelData.builder().with(DATA_TYPE, data).build();
 	}
 
-	public void setConnection(Direction direction, PipeConnection connection) {
-		connections[direction.get3DDataValue()] = connection;
-		syncConnections = true;
+	private void refreshConnectionModel() {
 		requestModelDataUpdate();
+		if (level != null) {
+			BlockState state = getBlockState();
+			level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+		}
+	}
+
+	public void setConnection(Direction direction, PipeConnection connection) {
+		int index = direction.get3DDataValue();
+		if (connections[index] == connection) {
+			return;
+		}
+		connections[index] = connection;
+		syncConnections = true;
+		refreshConnectionModel();
 		setChanged();
 	}
 
@@ -153,7 +173,7 @@ public class PipeBlockEntityBase extends BlockEntity {
 	public void setConnections(PipeConnection[] connections) {
 		this.connections = connections;
 		syncConnections = true;
-		requestModelDataUpdate();
+		refreshConnectionModel();
 		setChanged();
 	}
 
@@ -172,11 +192,16 @@ public class PipeBlockEntityBase extends BlockEntity {
 		}
 	}
 
+	@Override
 	public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider registries) {
 		super.onDataPacket(net, pkt, registries);
-		if (level.isClientSide()) {
-			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
-		}
+		refreshConnectionModel();
+	}
+
+	@Override
+	public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
+		super.handleUpdateTag(tag, registries);
+		refreshConnectionModel();
 	}
 
 	protected void resetSync() {
@@ -210,7 +235,7 @@ public class PipeBlockEntityBase extends BlockEntity {
 			if (nbt.contains("connection" + direction.get3DDataValue()))
 				connections[direction.get3DDataValue()] = PipeConnection.values()[nbt.getInt("connection" + direction.get3DDataValue())];
 		}
-		requestModelDataUpdate();
+		refreshConnectionModel();
 	}
 
 	@Override

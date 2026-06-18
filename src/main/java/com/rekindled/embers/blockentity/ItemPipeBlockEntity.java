@@ -50,9 +50,7 @@ public class ItemPipeBlockEntity extends ItemPipeBlockEntityBase {
 				@Nonnull
 				@Override
 				public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-					if (!simulate)
-						setFrom(facing, true);
-					return inventory.insertItem(slot, stack, simulate);
+					return PipeNetworkUtil.routeItem(ItemPipeBlockEntity.this, facing, stack, simulate);
 				}
 
 				@Nonnull
@@ -95,7 +93,7 @@ public class ItemPipeBlockEntity extends ItemPipeBlockEntityBase {
 		if (!this.isRemoved() && cap == ForgeCapabilities.ITEM_HANDLER) {
 			if (side == null)
 				return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, holder);
-			else
+			else if (getConnection(side).transfer)
 				return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, LazyOptional.of(() -> this.sideHandlers[side.get3DDataValue()]));
 		}
 		return LazyOptional.empty();

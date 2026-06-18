@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.blockentity.ClockworkAttenuatorBlockEntity;
@@ -38,7 +39,7 @@ public class ClockworkAttenuatorBlock extends DialBaseBlock implements EntityBlo
 			DecimalFormat multiplierFormat = DecimalFormats.getDecimalFormat(Embers.MODID + ".decimal_format.attenuator_multiplier");
 			double activeSpeed = ((ClockworkAttenuatorBlockEntity) tile).activeSpeed;
 			double inactiveSpeed = ((ClockworkAttenuatorBlockEntity) tile).inactiveSpeed;
-			boolean active = world.hasNeighborSignal(pos);
+			boolean active = ConfigManager.isRedstoneControlActive(world, pos);
 			text.add(Component.translatable(Embers.MODID + ".tooltip.attenuator.on", multiplierFormat.format(activeSpeed)).withStyle(active ? ChatFormatting.GREEN : ChatFormatting.DARK_GREEN));
 			text.add(Component.translatable(Embers.MODID + ".tooltip.attenuator.off", multiplierFormat.format(inactiveSpeed)).withStyle(!active ? ChatFormatting.RED : ChatFormatting.DARK_RED));
 		}
@@ -50,7 +51,7 @@ public class ClockworkAttenuatorBlock extends DialBaseBlock implements EntityBlo
 
 	public InteractionResult useLegacy(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 		if (level.getBlockEntity(pos) instanceof ClockworkAttenuatorBlockEntity attenuatorEntity) {
-			if (level.hasNeighborSignal(pos))
+			if (ConfigManager.isRedstoneControlActive(level, pos))
 				attenuatorEntity.activeSpeed = player.isSecondaryUseActive() ? attenuatorEntity.getPrevious(attenuatorEntity.activeSpeed) : attenuatorEntity.getNext(attenuatorEntity.activeSpeed);
 			else
 				attenuatorEntity.inactiveSpeed = player.isSecondaryUseActive() ? attenuatorEntity.getPrevious(attenuatorEntity.inactiveSpeed) : attenuatorEntity.getNext(attenuatorEntity.inactiveSpeed);
