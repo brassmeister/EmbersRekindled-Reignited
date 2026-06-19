@@ -124,7 +124,14 @@ public class EmbersBlockTags extends BlockTagsProvider {
 		.addTags(BlockTags.STANDING_SIGNS);
 		tag(EMITTER_CONNECTION_CEILING).add(Blocks.POINTED_DRIPSTONE).addTag(BlockTags.CEILING_HANGING_SIGNS);
 
-		tag(ITEM_PIPE_CONNECTION).addTag(ITEM_PIPE_CONNECTION_TOGGLEABLE);
+		tag(ITEM_PIPE_CONNECTION).addTag(ITEM_PIPE_CONNECTION_TOGGLEABLE)
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "item_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "transparent_item_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "framed_item_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "item_pipe_connection"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "transparent_item_pipe_connection"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "framed_item_pipe_connection"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "item_pipe_duct_block"));
 		//tag(ITEM_PIPE_CONNECTION).add(RegistryManager.ITEM_DROPPER.get(), RegistryManager.ITEM_VACUUM.get(), RegistryManager.ITEM_TRANSFER.get());
 		tag(ITEM_PIPE_CONNECTION_TOGGLEABLE).add(RegistryManager.ITEM_PIPE.get(), RegistryManager.ITEM_EXTRACTOR.get());
 
@@ -335,7 +342,16 @@ public class EmbersBlockTags extends BlockTagsProvider {
 
 		tag(DIAL).add(RegistryManager.EMBER_DIAL.get(), RegistryManager.ITEM_DIAL.get(), RegistryManager.FLUID_DIAL.get(), RegistryManager.CLOCKWORK_ATTENUATOR.get(), RegistryManager.ATMOSPHERIC_GAUGE.get());
 
-		tag(FLUID_PIPE_CONNECTION).addTag(FLUID_PIPE_CONNECTION_TOGGLEABLE);
+		tag(FLUID_PIPE_CONNECTION).addTag(FLUID_PIPE_CONNECTION_TOGGLEABLE)
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "fluid_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "encased_fluid_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "glass_fluid_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("create", "smart_fluid_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "fluid_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "framed_fluid_pipe"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "fluid_pipe_connection"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "framed_fluid_pipe_connection"))
+				.addOptional(ResourceLocation.fromNamespaceAndPath("oritech", "fluid_pipe_duct_block"));
 		//tag(FLUID_PIPE_CONNECTION).add(RegistryManager.FLUID_TRANSFER.get(), RegistryManager.CATALYTIC_PLUG.get());
 		tag(FLUID_PIPE_CONNECTION_TOGGLEABLE).add(RegistryManager.FLUID_PIPE.get(), RegistryManager.FLUID_EXTRACTOR.get());
 

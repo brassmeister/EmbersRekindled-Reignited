@@ -16,8 +16,10 @@ import com.rekindled.embers.compat.legacy.capabilities.ForgeCapabilities;
 import com.rekindled.embers.compat.sublevel.SubLevelCompat;
 import com.rekindled.embers.util.CapabilityCompat;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -92,10 +94,7 @@ public final class PipeNetworkUtil {
 		ArrayList<ItemTarget> targets = new ArrayList<>();
 		walk(origin, blockedFirstSide, ItemPipeBlockEntityBase.class, (pipe, direction, path) -> {
 			BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
-			if (neighbor == null || neighbor instanceof ItemPipeBlockEntityBase) {
-				return;
-			}
-			IItemHandler handler = CapabilityCompat.getCapability(neighbor, ForgeCapabilities.ITEM_HANDLER, direction.getOpposite()).orElse(null);
+			IItemHandler handler = getAdjacentItemHandler(pipe, direction, neighbor);
 			if (handler != null) {
 				targets.add(new ItemTarget(handler, priority(neighbor, direction.getOpposite()), path));
 			}
@@ -108,10 +107,7 @@ public final class PipeNetworkUtil {
 		ArrayList<FluidTarget> targets = new ArrayList<>();
 		walk(origin, blockedFirstSide, FluidPipeBlockEntityBase.class, (pipe, direction, path) -> {
 			BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
-			if (neighbor == null || neighbor instanceof FluidPipeBlockEntityBase) {
-				return;
-			}
-			IFluidHandler handler = CapabilityCompat.getCapability(neighbor, ForgeCapabilities.FLUID_HANDLER, direction.getOpposite()).orElse(null);
+			IFluidHandler handler = getAdjacentFluidHandler(pipe, direction, neighbor);
 			if (handler != null) {
 				targets.add(new FluidTarget(handler, priority(neighbor, direction.getOpposite()), path));
 			}
@@ -133,7 +129,7 @@ public final class PipeNetworkUtil {
 				if (pipe == origin && direction == blockedFirstSide) {
 					continue;
 				}
-				if (!pipe.getConnection(direction).transfer) {
+				if (!canUseAdjacentSide(pipe, direction, pipeType)) {
 					continue;
 				}
 				BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
@@ -151,6 +147,78 @@ public final class PipeNetworkUtil {
 		}
 	}
 
+	static boolean canUseAdjacentSide(PipeBlockEntityBase pipe, Direction direction, Class<? extends PipeBlockEntityBase> pipeType) {
+		PipeBlockEntityBase.PipeConnection connection = pipe.getConnection(direction);
+		if (connection.transfer) {
+			return true;
+		}
+		if (connection != PipeBlockEntityBase.PipeConnection.NONE || !hasLiveEndpoint(pipe, direction, pipeType)) {
+			return false;
+		}
+		pipe.setConnection(direction, PipeBlockEntityBase.PipeConnection.END);
+		return true;
+	}
+
+	static IItemHandler getAdjacentItemHandler(PipeBlockEntityBase pipe, Direction direction) {
+		return getAdjacentItemHandler(pipe, direction, SubLevelCompat.findAdjacent(pipe, direction));
+	}
+
+	static IFluidHandler getAdjacentFluidHandler(PipeBlockEntityBase pipe, Direction direction) {
+		return getAdjacentFluidHandler(pipe, direction, SubLevelCompat.findAdjacent(pipe, direction));
+	}
+
+	private static boolean hasLiveEndpoint(PipeBlockEntityBase pipe, Direction direction, Class<? extends PipeBlockEntityBase> pipeType) {
+		BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
+		if (pipeType.isInstance(neighbor)) {
+			return false;
+		}
+		if (pipeType == ItemPipeBlockEntityBase.class) {
+			return getAdjacentItemHandler(pipe, direction, neighbor) != null;
+		}
+		if (pipeType == FluidPipeBlockEntityBase.class) {
+			return getAdjacentFluidHandler(pipe, direction, neighbor) != null;
+		}
+		return false;
+	}
+
+	private static IItemHandler getAdjacentItemHandler(PipeBlockEntityBase pipe, Direction direction, @Nullable BlockEntity neighbor) {
+		if (neighbor instanceof ItemPipeBlockEntityBase) {
+			return null;
+		}
+		Direction side = direction.getOpposite();
+		if (neighbor != null) {
+			IItemHandler handler = CapabilityCompat.getCapability(neighbor, ForgeCapabilities.ITEM_HANDLER, side).orElse(null);
+			if (handler != null) {
+				return handler;
+			}
+		}
+		Level level = pipe.getLevel();
+		BlockPos targetPos = pipe.getBlockPos().relative(direction);
+		if (level == null || (neighbor == null && level.isEmptyBlock(targetPos))) {
+			return null;
+		}
+		return CapabilityCompat.getItemHandler(level, targetPos, side).orElse(null);
+	}
+
+	private static IFluidHandler getAdjacentFluidHandler(PipeBlockEntityBase pipe, Direction direction, @Nullable BlockEntity neighbor) {
+		if (neighbor instanceof FluidPipeBlockEntityBase) {
+			return null;
+		}
+		Direction side = direction.getOpposite();
+		if (neighbor != null) {
+			IFluidHandler handler = CapabilityCompat.getCapability(neighbor, ForgeCapabilities.FLUID_HANDLER, side).orElse(null);
+			if (handler != null) {
+				return handler;
+			}
+		}
+		Level level = pipe.getLevel();
+		BlockPos targetPos = pipe.getBlockPos().relative(direction);
+		if (level == null || (neighbor == null && level.isEmptyBlock(targetPos))) {
+			return null;
+		}
+		return CapabilityCompat.getFluidHandler(level, targetPos, side).orElse(null);
+	}
+
 	private static boolean canTraverse(PipeBlockEntityBase origin, PipeBlockEntityBase nextPipe) {
 		if (nextPipe == origin || nextPipe.getLevel() == null) {
 			return true;
@@ -161,7 +229,7 @@ public final class PipeNetworkUtil {
 		return true;
 	}
 
-	private static int priority(BlockEntity blockEntity, Direction side) {
+	private static int priority(@Nullable BlockEntity blockEntity, Direction side) {
 		if (blockEntity instanceof IItemPipePriority itemPriority) {
 			return itemPriority.getPriority(side);
 		}

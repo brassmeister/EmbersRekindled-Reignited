@@ -1,5 +1,41 @@
 {
   "values": [
-    "#embers:fluid_pipe_connection/toggleable"
+    "#embers:fluid_pipe_connection/toggleable",
+    {
+      "id": "create:fluid_pipe",
+      "required": false
+    },
+    {
+      "id": "create:encased_fluid_pipe",
+      "required": false
+    },
+    {
+      "id": "create:glass_fluid_pipe",
+      "required": false
+    },
+    {
+      "id": "create:smart_fluid_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:fluid_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:framed_fluid_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:fluid_pipe_connection",
+      "required": false
+    },
+    {
+      "id": "oritech:framed_fluid_pipe_connection",
+      "required": false
+    },
+    {
+      "id": "oritech:fluid_pipe_duct_block",
+      "required": false
+    }
   ]
 }

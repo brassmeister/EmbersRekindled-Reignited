@@ -18,7 +18,6 @@ import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
 import com.rekindled.embers.api.tile.IOrderDestination;
 import com.rekindled.embers.api.tile.IOrderSource;
 import com.rekindled.embers.api.tile.OrderStack;
-import com.rekindled.embers.compat.sublevel.SubLevelCompat;
 import com.rekindled.embers.particle.VaporParticleOptions;
 import com.rekindled.embers.util.EmbersColors;
 
@@ -177,14 +176,10 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 
 	private boolean extractAndRoute(IFilter filter, IItemHandler invDest, OrderStack currentOrder) {
 		for (Direction facing : Direction.values()) {
-			if (!getConnection(facing).transfer) {
+			if (!PipeNetworkUtil.canUseAdjacentSide(this, facing, ItemPipeBlockEntityBase.class)) {
 				continue;
 			}
-			BlockEntity tile = SubLevelCompat.findAdjacent(this, facing);
-			if (tile == null || tile instanceof ItemPipeBlockEntityBase) {
-				continue;
-			}
-			IItemHandler handler = com.rekindled.embers.util.CapabilityCompat.getCapability(tile, ForgeCapabilities.ITEM_HANDLER, facing.getOpposite()).orElse(null);
+			IItemHandler handler = PipeNetworkUtil.getAdjacentItemHandler(this, facing);
 			if (handler == null) {
 				continue;
 			}

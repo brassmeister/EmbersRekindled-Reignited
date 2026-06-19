@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -52,6 +53,14 @@ public class FluidPipeBlock extends PipeBlockBase {
 	@Override
 	public boolean connectToTile(BlockEntity blockEntity, Direction direction) {
 		return blockEntity != null && com.rekindled.embers.util.CapabilityCompat.getCapability(blockEntity, ForgeCapabilities.FLUID_HANDLER, direction.getOpposite()).isPresent();
+	}
+
+	@Override
+	public boolean connectToTile(LevelAccessor level, BlockPos pos, BlockState state, BlockEntity blockEntity, Direction direction) {
+		if (level instanceof Level actualLevel && com.rekindled.embers.util.CapabilityCompat.getFluidHandler(actualLevel, pos, direction.getOpposite()).isPresent()) {
+			return true;
+		}
+		return connectToTile(blockEntity, direction);
 	}
 
 	@Override

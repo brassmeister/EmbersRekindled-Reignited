@@ -1,5 +1,33 @@
 {
   "values": [
-    "#embers:item_pipe_connection/toggleable"
+    "#embers:item_pipe_connection/toggleable",
+    {
+      "id": "oritech:item_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:transparent_item_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:framed_item_pipe",
+      "required": false
+    },
+    {
+      "id": "oritech:item_pipe_connection",
+      "required": false
+    },
+    {
+      "id": "oritech:transparent_item_pipe_connection",
+      "required": false
+    },
+    {
+      "id": "oritech:framed_item_pipe_connection",
+      "required": false
+    },
+    {
+      "id": "oritech:item_pipe_duct_block",
+      "required": false
+    }
   ]
 }

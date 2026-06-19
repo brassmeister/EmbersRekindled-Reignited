@@ -11,7 +11,6 @@ import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
-import com.rekindled.embers.compat.sublevel.SubLevelCompat;
 import com.rekindled.embers.particle.VaporParticleOptions;
 import com.rekindled.embers.util.EmbersColors;
 
@@ -20,7 +19,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import com.rekindled.embers.compat.legacy.capabilities.Capability;
@@ -132,14 +130,10 @@ public class FluidExtractorBlockEntity extends FluidPipeBlockEntityBase implemen
 
 	private boolean extractAndRoute() {
 		for (Direction facing : Direction.values()) {
-			if (!getConnection(facing).transfer) {
+			if (!PipeNetworkUtil.canUseAdjacentSide(this, facing, FluidPipeBlockEntityBase.class)) {
 				continue;
 			}
-			BlockEntity tile = SubLevelCompat.findAdjacent(this, facing);
-			if (tile == null || tile instanceof FluidPipeBlockEntityBase) {
-				continue;
-			}
-			IFluidHandler handler = com.rekindled.embers.util.CapabilityCompat.getCapability(tile, ForgeCapabilities.FLUID_HANDLER, facing.getOpposite()).orElse(null);
+			IFluidHandler handler = PipeNetworkUtil.getAdjacentFluidHandler(this, facing);
 			if (handler == null) {
 				continue;
 			}

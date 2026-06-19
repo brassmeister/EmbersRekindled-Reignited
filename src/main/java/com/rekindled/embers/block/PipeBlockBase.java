@@ -68,6 +68,10 @@ public abstract class PipeBlockBase extends EmbersEntityBlock implements SimpleW
 
 	public abstract boolean connectToTile(BlockEntity blockEntity, Direction face);
 
+	public boolean connectToTile(LevelAccessor level, BlockPos pos, BlockState state, BlockEntity blockEntity, Direction face) {
+		return connectToTile(blockEntity, face);
+	}
+
 	public abstract boolean unclog(BlockEntity blockEntity, Level level, BlockPos pos);
 
 	public PipeBlockBase(Properties pProperties) {
@@ -132,7 +136,14 @@ public abstract class PipeBlockBase extends EmbersEntityBlock implements SimpleW
 					return InteractionResult.SUCCESS;
 				}
 				BlockEntity blockEntity = level.getBlockEntity(facingPos);
-				if (connectToTile(blockEntity, face)) {
+				if (facingState.is(getConnectionTag())) {
+					pipe.setConnection(face, PipeConnection.PIPE);
+					level.updateNeighbourForOutputSignal(pos, this);
+					facingState.updateShape(face.getOpposite(), state, level, facingPos, pos);
+					level.playLocalSound(pos.getX() + 0.5 + face.getStepX() * 0.4, pos.getY() + 0.5 + face.getStepY() * 0.4, pos.getZ() + 0.5 + face.getStepZ() * 0.4, EmbersSounds.PIPE_CONNECT.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
+					return InteractionResult.SUCCESS;
+				}
+				if (connectToTile(level, facingPos, facingState, blockEntity, face)) {
 					if (facingState.getBlock() instanceof IPipeConnection) {
 						pipe.setConnection(face, ((IPipeConnection) facingState.getBlock()).getPipeConnection(facingState, face.getOpposite()));
 					} else {
@@ -260,7 +271,7 @@ public abstract class PipeBlockBase extends EmbersEntityBlock implements SimpleW
 					BlockEntity blockEntity = pLevel.getBlockEntity(pFacingPos);
 					if (connected(pFacing, pFacingState)) {
 						pipe.setConnection(pFacing, PipeConnection.LEVER);
-					} else if ((connectToTile(blockEntity, pFacing) && enabled)) {
+					} else if ((connectToTile(pLevel, pFacingPos, pFacingState, blockEntity, pFacing) && enabled)) {
 						if (pFacingState.getBlock() instanceof IPipeConnection) {
 							pipe.setConnection(pFacing, ((IPipeConnection) pFacingState.getBlock()).getPipeConnection(pFacingState, pFacing.getOpposite()));
 						} else {
