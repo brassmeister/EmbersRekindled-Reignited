@@ -264,6 +264,7 @@ public final class EmbersClientModEvents {
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/stamper_arm")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/automatic_hammer_end")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/inferno_forge_hatch")));
+		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/ember_bore_blades")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/excavation_buckets_wheel")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/ember_bore_excavation_buckets")));
 	}

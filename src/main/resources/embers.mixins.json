@@ -9,7 +9,8 @@
     "CreateBlazeBurnerBlockInteractionMixin",
     "EmberLinkSubLevelAssemblyMixin",
     "EmberLinkTargetSubLevelAssemblyMixin",
-    "InfernoForgeSubLevelCollisionMixin"
+    "InfernoForgeSubLevelCollisionMixin",
+    "JadeCommonProxyMixin"
   ],
   "client": [
     "CTPhysicsGogglesClientUtilMixin"

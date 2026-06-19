@@ -87,9 +87,10 @@ public class ReservoirBlockEntity extends OpenTankBlockEntity {
 		return tank;
 	}
 
+	@Override
 	public <T> LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction facing) {
 		if (facing == Direction.DOWN || facing == null)
-			return LazyOptional.empty();
+			return super.getCapability(capability, facing);
 		return LazyOptional.empty();
 	}
 

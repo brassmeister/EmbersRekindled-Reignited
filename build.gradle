@@ -48,6 +48,10 @@ repositories {
         name = 'Curios'
         url = 'https://maven.theillusivec4.top/'
     }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+    }
 }
 
 def referenceLibs = fileTree('E:/create-thrusters/libs') {
@@ -95,6 +99,7 @@ dependencies {
     compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:1.0.6"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    compileOnly "maven.modrinth:jade:${jade_version}"
 }
 
 def replaceProperties = [

@@ -395,6 +395,16 @@ public class EmbersLang extends LanguageProvider {
 		add(Embers.MODID + ".tooltip.goggles.actuator_slot", "• Actuator Slot");
 		add(Embers.MODID + ".tooltip.goggles.redstone_signal", "§4▲§r Redstone Signal");
 
+		add("config.jade.plugin_" + Embers.MODID + ".machine_details", "Embers Machine Details");
+		add(Embers.MODID + ".jade.ember", "Ember: %s/%s");
+		add(Embers.MODID + ".jade.ember.volatile", "Accepts Volatile Ember");
+		add(Embers.MODID + ".jade.energy", "Energy: %s/%s FE");
+		add(Embers.MODID + ".jade.items", "Items: %s/%s slots, %s total");
+		add(Embers.MODID + ".jade.item", "Slot %s: %s x%s");
+		add(Embers.MODID + ".jade.fluids", "Fluids: %s/%s tanks");
+		add(Embers.MODID + ".jade.fluid", "Tank %s: %s %s/%s mB");
+		add(Embers.MODID + ".jade.fluid.empty", "Tank %s: Empty / %s mB");
+
 		add(Embers.MODID + ".tooltip.crystal.level", "Level %s");
 		add(Embers.MODID + ".tooltip.crystal.xp", "Refinement %s/%s");
 

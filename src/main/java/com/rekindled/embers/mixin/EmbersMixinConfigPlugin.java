@@ -27,6 +27,9 @@ public class EmbersMixinConfigPlugin implements IMixinConfigPlugin {
 					&& loadingModList.getModFileById("create") != null
 					&& loadingModList.getModFileById("createthrusters") != null;
 		}
+		if ("com.rekindled.embers.mixin.JadeCommonProxyMixin".equals(mixinClassName)) {
+			return loadingModList != null && loadingModList.getModFileById("jade") != null;
+		}
 		if ("com.rekindled.embers.mixin.CreateBlazeBurnerBlockEntityMixin".equals(mixinClassName)
 				|| "com.rekindled.embers.mixin.CreateBlazeBurnerBlockInteractionMixin".equals(mixinClassName)) {
 			return loadingModList != null && loadingModList.getModFileById("create") != null;

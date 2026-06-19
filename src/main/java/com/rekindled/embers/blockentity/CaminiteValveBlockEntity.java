@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.block.MechEdgeBlockBase;
 import com.rekindled.embers.datagen.EmbersBlockTags;
+import com.rekindled.embers.util.CapabilityCompat;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,50 +32,57 @@ public class CaminiteValveBlockEntity extends BlockEntity {
 
 			@Override
 			public int getTanks() {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).getTanks();
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.getTanks();
 				return 0;
 			}
 
 			@Override
 			public @NotNull FluidStack getFluidInTank(int tank) {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).getFluidInTank(tank);
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.getFluidInTank(tank);
 				return FluidStack.EMPTY;
 			}
 
 			@Override
 			public int getTankCapacity(int tank) {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).getTankCapacity(tank);
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.getTankCapacity(tank);
 				return 0;
 			}
 
 			@Override
 			public boolean isFluidValid(int tank, @NotNull FluidStack stack) {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).isFluidValid(tank, stack);
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.isFluidValid(tank, stack);
 				return false;
 			}
 
 			@Override
 			public int fill(FluidStack resource, FluidAction action) {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).fill(resource, action);
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.fill(resource, action);
 				return 0;
 			}
 
 			@Override
 			public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).drain(resource, action);
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.drain(resource, action);
 				return FluidStack.EMPTY;
 			}
 
 			@Override
 			public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
-				if (reservoir != null)
-					return com.rekindled.embers.util.CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null).drain(maxDrain, action);
+				IFluidHandler handler = getReservoirHandler();
+				if (handler != null)
+					return handler.drain(maxDrain, action);
 				return FluidStack.EMPTY;
 			}
 		};
@@ -82,6 +90,12 @@ public class CaminiteValveBlockEntity extends BlockEntity {
 
 	public ReservoirBlockEntity getReservoir() {
 		return reservoir;
+	}
+
+	private @Nullable IFluidHandler getReservoirHandler() {
+		if (reservoir == null || reservoir.isRemoved())
+			return null;
+		return CapabilityCompat.getCapability(reservoir, ForgeCapabilities.FLUID_HANDLER, null).orElse(null);
 	}
 
 	public <T> LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction facing) {
