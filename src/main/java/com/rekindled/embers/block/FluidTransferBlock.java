@@ -103,7 +103,10 @@ public class FluidTransferBlock extends EmbersEntityBlock implements SimpleWater
 	@Nullable
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
-		Direction facing = getPlacementFacing(context);
+		Direction facing = context.getNearestLookingDirection().getOpposite();
+		if (context.getPlayer() != null && context.getPlayer().isSecondaryUseActive()) {
+			facing = facing.getOpposite();
+		}
 		return this.defaultBlockState().setValue(BlockStateProperties.FACING, facing).setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(context.getLevel().getFluidState(context.getClickedPos()).getType() == Fluids.WATER));
 	}
 
@@ -127,7 +130,7 @@ public class FluidTransferBlock extends EmbersEntityBlock implements SimpleWater
 
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
-		return null;
+		return pLevel.isClientSide ? null : createTickerHelper(pBlockEntityType, RegistryManager.FLUID_TRANSFER_ENTITY.get(), FluidTransferBlockEntity::serverTick);
 	}
 
 	@Override

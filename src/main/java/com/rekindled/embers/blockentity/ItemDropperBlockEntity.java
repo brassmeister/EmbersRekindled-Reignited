@@ -44,12 +44,12 @@ public class ItemDropperBlockEntity extends BlockEntity implements IItemPipePrio
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, ItemDropperBlockEntity blockEntity) {
 		if (!blockEntity.inventory.getStackInSlot(0).isEmpty()) {
-			level.addFreshEntity(new ItemEntity(level, pos.getX()+0.5, pos.getY(), pos.getZ()+0.5, blockEntity.inventory.extractItem(0, 1, false), 0, -0.1, 0));
+			level.addFreshEntity(new ItemEntity(level, pos.getX()+0.5, pos.getY()+0.25, pos.getZ()+0.5, blockEntity.inventory.extractItem(0, 1, false), 0, -0.1, 0));
 		}
 	}
 
 	public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-		if (!this.isRemoved() && side == Direction.UP && cap == ForgeCapabilities.ITEM_HANDLER) {
+		if (!this.isRemoved() && (side == null || side == Direction.UP) && cap == ForgeCapabilities.ITEM_HANDLER) {
 			return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, holder);
 		}
 		return LazyOptional.empty();

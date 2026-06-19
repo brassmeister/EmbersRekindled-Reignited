@@ -15,6 +15,7 @@ import net.minecraft.data.PackOutput;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.common.data.LanguageProvider;
 import com.rekindled.embers.util.CompatRegistryObject;
 
@@ -286,6 +287,7 @@ public class EmbersLang extends LanguageProvider {
 		addEntityType(RegistryManager.EMBER_PROJECTILE, "Ember Projectile");
 		addEntityType(RegistryManager.GLIMMER_PROJECTILE, "Glimmer Projectile");
 
+		addGeneralTooltips();
 
 		//augments
 		addAugment(RegistryManager.TINKER_LENS_AUGMENT, "Tinker's Sight", true);
@@ -1257,6 +1259,236 @@ public class EmbersLang extends LanguageProvider {
 		addSubtitle(EmbersSounds.ANCIENT_GOLEM_DEATH, "Ancient Golem is destroyed");
 	}
 
+	private void addGeneralTooltips() {
+		for (FluidStuff fluid : RegistryManager.fluidList) {
+			addTooltip(fluid.FLUID_BUCKET, "A sealed bucket of " + fluid.localizedName + ".");
+		}
+
+		addBlockTooltip(RegistryManager.CAMINITE_BRICKS, "Caminite bricks hold heat well and make a sturdy workshop wall.");
+		addDecoTooltip(RegistryManager.CAMINITE_BRICKS_DECO, "Caminite bricks shaped for workshop trim.");
+		addBlockTooltip(RegistryManager.CAMINITE_LARGE_BRICKS, "Broad caminite bricks for heavier Emberworks.");
+		addDecoTooltip(RegistryManager.CAMINITE_LARGE_BRICKS_DECO, "Broad caminite bricks shaped for workshop trim.");
+		addBlockTooltip(RegistryManager.RAW_CAMINITE_BLOCK, "Unfired caminite packed into a workable block.");
+		addBlockTooltip(RegistryManager.CAMINITE_LARGE_TILE, "Large caminite tiles for clean floors and furnace rooms.");
+		addDecoTooltip(RegistryManager.CAMINITE_LARGE_TILE_DECO, "Large caminite tiles shaped for workshop trim.");
+		addBlockTooltip(RegistryManager.CAMINITE_TILES, "Caminite tiles cut for a tidy machine hall.");
+		addDecoTooltip(RegistryManager.CAMINITE_TILES_DECO, "Caminite tiles shaped for workshop trim.");
+		addBlockTooltip(RegistryManager.ARCHAIC_BRICKS, "Old brickwork with a stubborn trace of Ember about it.");
+		addDecoTooltip(RegistryManager.ARCHAIC_BRICKS_DECO, "Old brickwork shaped for ruins and vaults.");
+		addBlockTooltip(RegistryManager.ARCHAIC_EDGE, "A hard archaic border for framing older stonework.");
+		addBlockTooltip(RegistryManager.ARCHAIC_TILE, "A worn archaic tile, still fit for a proper floor.");
+		addDecoTooltip(RegistryManager.ARCHAIC_TILE_DECO, "Archaic tile shaped for ruins and vaults.");
+		addBlockTooltip(RegistryManager.ARCHAIC_LARGE_BRICKS, "Heavy archaic bricks from a less careful age.");
+		addDecoTooltip(RegistryManager.ARCHAIC_LARGE_BRICKS_DECO, "Heavy archaic bricks shaped for ruins and vaults.");
+		addBlockTooltip(RegistryManager.ARCHAIC_LIGHT, "An old lamp that still remembers how to glow.");
+		addBlockTooltip(RegistryManager.ASHEN_STONE, "Dark stone touched by heat and old soot.");
+		addDecoTooltip(RegistryManager.ASHEN_STONE_DECO, "Ashen stone shaped for darker halls.");
+		addBlockTooltip(RegistryManager.ASHEN_BRICK, "Ashen stone worked into practical brick.");
+		addDecoTooltip(RegistryManager.ASHEN_BRICK_DECO, "Ashen brick shaped for darker halls.");
+		addBlockTooltip(RegistryManager.ASHEN_TILE, "Ashen stone cut into a cleaner tile.");
+		addDecoTooltip(RegistryManager.ASHEN_TILE_DECO, "Ashen tile shaped for darker halls.");
+		addBlockTooltip(RegistryManager.SEALED_PLANKS, "Treated planks that fare better around steam and heat.");
+		addDecoTooltip(RegistryManager.SEALED_PLANKS_DECO, "Treated planks shaped for workshop trim.");
+		addBlockTooltip(RegistryManager.REINFORCED_SEALED_PLANKS, "Sealed planks strengthened for heavier use.");
+		addBlockTooltip(RegistryManager.SEALED_WOOD_TILE, "Sealed wood arranged into a clean tiled face.");
+		addDecoTooltip(RegistryManager.SEALED_WOOD_TILE_DECO, "Sealed wood tiles shaped for workshop trim.");
+		addBlockTooltip(RegistryManager.SEALED_WOOD_PILLAR, "A sealed wood pillar for sturdy frames and warm halls.");
+		addBlockTooltip(RegistryManager.SEALED_WOOD_KEG, "Sealed wood wrapped into a simple keg-like block.");
+		addBlockTooltip(RegistryManager.SOLIDIFIED_METAL, "A dense metal block for a hard industrial finish.");
+		addBlockTooltip(RegistryManager.METAL_PLATFORM, "A grated metal platform for walkways and machine rooms.");
+		addDecoTooltip(RegistryManager.METAL_PLATFORM_DECO, "Metal platform pieces shaped for walkways.");
+		addBlockTooltip(RegistryManager.EMBER_LANTERN, "A warm lantern lit by a quiet Ember glow.");
+
+		addBlockTooltip(RegistryManager.COPPER_CELL, "Stores Ember for machines that cannot stay fed by pipes alone.");
+		addBlockTooltip(RegistryManager.CREATIVE_EMBER, "A bottomless Ember source for testing machines.");
+		addBlockTooltip(RegistryManager.EMBER_DIAL, "Shows how much Ember is held by the block it faces.");
+		addBlockTooltip(RegistryManager.ITEM_DIAL, "Shows what an adjacent inventory is holding.");
+		addBlockTooltip(RegistryManager.FLUID_DIAL, "Shows what an adjacent tank is holding.");
+		addBlockTooltip(RegistryManager.ATMOSPHERIC_GAUGE, "Reads the pressure in nearby steamwork.");
+		addBlockTooltip(RegistryManager.EMBER_EMITTER, "Sends Ember through the air to a linked receiver or relay.");
+		addBlockTooltip(RegistryManager.EMBER_RECEIVER, "Receives Ember beams and feeds the block behind it.");
+		addBlockTooltip(RegistryManager.CAMINITE_LEVER, "A caminite lever for simple redstone control.");
+		addBlockTooltip(RegistryManager.CAMINITE_BUTTON, "A caminite button for quick redstone pulses.");
+		addBlockTooltip(RegistryManager.ITEM_PIPE, "Carries items between machines when an extractor starts the flow.");
+		addBlockTooltip(RegistryManager.ITEM_EXTRACTOR, "Pulls items into an item pipe while it has a signal.");
+		addBlockTooltip(RegistryManager.EMBER_BORE, "Burns fuel near bedrock to draw Ember crystals from below.");
+		addBlockTooltip(RegistryManager.MECHANICAL_CORE, "Lets upgrades reach a machine from a little farther away.");
+		addBlockTooltip(RegistryManager.EMBER_ACTIVATOR, "Burns Ember crystals into usable Ember power.");
+		addBlockTooltip(RegistryManager.MELTER, "Melts metals down for casting, mixing, and stamping.");
+		addBlockTooltip(RegistryManager.FLUID_PIPE, "Carries fluids between tanks and machines when an extractor starts the flow.");
+		addBlockTooltip(RegistryManager.FLUID_EXTRACTOR, "Pulls fluid into a fluid pipe while it has a signal.");
+		addBlockTooltip(RegistryManager.FLUID_VESSEL, "Stores a large amount of one fluid.");
+		addBlockTooltip(RegistryManager.STAMPER, "Presses molten metal into the mold set below it.");
+		addBlockTooltip(RegistryManager.STAMP_BASE, "Holds a stamp or receives metal from the machine above it.");
+		addBlockTooltip(RegistryManager.BIN, "Stores many stacks of one item and plays nicely with item pipes.");
+		addBlockTooltip(RegistryManager.MIXER_CENTRIFUGE, "Blends molten metals into alloys when the measures are right.");
+		addBlockTooltip(RegistryManager.ITEM_DROPPER, "Drops items fed into its top into the world below.");
+		addBlockTooltip(RegistryManager.PRESSURE_REFINERY, "Refines Ember production with heat, water, and pressure.");
+		addBlockTooltip(RegistryManager.EMBER_EJECTOR, "Pushes Ember out of a machine toward nearby receivers.");
+		addBlockTooltip(RegistryManager.EMBER_FUNNEL, "Spreads Ember from one source into nearby hungry machines.");
+		addBlockTooltip(RegistryManager.EMBER_RELAY, "Carries linked Ember beams farther than an emitter can alone.");
+		addBlockTooltip(RegistryManager.MIRROR_RELAY, "Turns a linked Ember beam toward another target.");
+		addBlockTooltip(RegistryManager.BEAM_SPLITTER, "Splits incoming Ember between more than one linked target.");
+		addBlockTooltip(RegistryManager.ITEM_VACUUM, "Pulls loose items from the ground into an item pipe line.");
+		addBlockTooltip(RegistryManager.HEARTH_COIL, "Uses Ember heat to cook, smoke, or blast items.");
+		addBlockTooltip(RegistryManager.RESERVOIR, "Forms the heart of an open caminite fluid tank.");
+		addBlockTooltip(RegistryManager.CAMINITE_RING, "Forms the walls of a Reservoir.");
+		addBlockTooltip(RegistryManager.CAMINITE_GAUGE, "Shows how full a Reservoir is.");
+		addBlockTooltip(RegistryManager.CAMINITE_VALVE, "Lets pipes and buckets reach a Reservoir.");
+		addBlockTooltip(RegistryManager.CRYSTAL_CELL, "Grows a crystal reserve from Ember crystals fed into it.");
+		addBlockTooltip(RegistryManager.COPPER_CHARGER, "Moves Ember between a Copper Cell and carried Ember containers.");
+		addBlockTooltip(RegistryManager.ITEM_TRANSFER, "Guides item pipe flow from its back to its front, with a simple filter.");
+		addBlockTooltip(RegistryManager.FLUID_TRANSFER, "Guides fluid pipe flow from its back to its front, with a simple filter.");
+		addBlockTooltip(RegistryManager.ALCHEMY_PEDESTAL, "Holds aspectus around the Exchange Tablet during alchemy.");
+		addBlockTooltip(RegistryManager.ALCHEMY_TABLET, "Solves alchemy through aspectus, ingredients, and Ember.");
+		addBlockTooltip(RegistryManager.BEAM_CANNON, "Fires stored Ember as a beam for alchemy and combat.");
+		addBlockTooltip(RegistryManager.MECHANICAL_PUMP, "Draws water from the world when powered by Ember.");
+		addBlockTooltip(RegistryManager.EMBER_INJECTOR, "Feeds Ember into a growing crystal seed.");
+		addCrystalSeedTooltips();
+		addBlockTooltip(RegistryManager.FIELD_CHART, "Shows how rich the ground is in Ember below the area.");
+		addBlockTooltip(RegistryManager.IGNEM_REACTOR, "Burns fuel and catalysts into Ember power.");
+		addBlockTooltip(RegistryManager.CATALYSIS_CHAMBER, "Works with the Ignem Reactor to prepare catalysts.");
+		addBlockTooltip(RegistryManager.COMBUSTION_CHAMBER, "Feeds steady flame to the Ignem Reactor.");
+		addBlockTooltip(RegistryManager.CINDER_PLINTH, "Burns items into ash without scattering the result.");
+		addBlockTooltip(RegistryManager.DAWNSTONE_ANVIL, "Sockets augments and works Ember-touched tools into shape.");
+		addBlockTooltip(RegistryManager.AUTOMATIC_HAMMER, "Swings a hammer for the machine in front of it.");
+		addBlockTooltip(RegistryManager.INFERNO_FORGE, "A large forge for the hottest Ember work.");
+		addBlockTooltip(RegistryManager.MNEMONIC_INSCRIBER, "Writes a successful Exchange Tablet recipe onto waiting paper.");
+		addBlockTooltip(RegistryManager.EXCAVATION_BUCKETS, "Lets an Ember Bore dig up heavier things than Ember crystals.");
+
+		addTooltip(RegistryManager.TINKER_HAMMER, "Turns and links Ember machines, and handles smaller workshop chores.");
+		addTooltip(RegistryManager.TINKER_LENS, "Reveals Ember inputs, outputs, and machine hints while held.");
+		addTooltip(RegistryManager.SMOKY_TINKER_LENS, "Hides the extra machine markings when socketed into goggles.");
+		addTooltip(RegistryManager.ANCIENT_CODEX, "Holds the notes you have uncovered about Ember craft.");
+		addTooltip(RegistryManager.EMBER_JAR, "A small carried vessel for Ember.");
+		addTooltip(RegistryManager.EMBER_CARTRIDGE, "A larger carried vessel for Ember.");
+		addTooltip(CuriosCompat.EMBER_BULB, "A worn bulb for carrying Ember close at hand.");
+		addTooltip(RegistryManager.CLOCKWORK_PICKAXE, "A pick that can draw on Ember instead of wearing itself down.");
+		addTooltip(RegistryManager.CLOCKWORK_AXE, "An axe that can draw on Ember instead of wearing itself down.");
+		addTooltip(RegistryManager.GRANDHAMMER, "A heavy hammer that breaks wide patches when fed with Ember.");
+		addTooltip(RegistryManager.BLAZING_RAY, "Focuses Ember into a piercing ray.");
+		addTooltip(RegistryManager.CINDER_STAFF, "Shapes Ember into a charged burst of flame.");
+		addTooltip(RegistryManager.ALCHEMICAL_WASTE, "The spoiled remains of failed alchemy, still worth studying.");
+		addTooltip(RegistryManager.ALCHEMICAL_NOTE, "A written alchemy recipe for later reference.");
+		addTooltip(RegistryManager.CODEBREAKING_SLATE, "A slate for sorting through the marks left by alchemy.");
+		addTooltip(RegistryManager.TYRFING, "A hungry blade that cuts deeper into better armor.");
+		addTooltip(RegistryManager.INFLICTOR_GEM, "Remembers the kind of hurt it has been given.");
+		addTooltip(RegistryManager.ASHEN_GOGGLES, "Goggles for seeing machine markings and holding inflictor gems.");
+		addTooltip(RegistryManager.ASHEN_CLOAK, "Ashen armor that can carry inflictor gems.");
+		addTooltip(RegistryManager.ASHEN_LEGGINGS, "Ashen armor that can carry inflictor gems.");
+		addTooltip(RegistryManager.ASHEN_BOOTS, "Ashen armor that can carry inflictor gems.");
+		addTooltip(RegistryManager.GLIMMER_CRYSTAL, "A bright crystal for marking distant things with light.");
+		addTooltip(RegistryManager.GLIMMER_LAMP, "A lamp that casts glimmering light where it is aimed.");
+
+		addTooltip(RegistryManager.EMBER_CRYSTAL, "A raw crystal of Ember, ready for activation or storage.");
+		addTooltip(RegistryManager.EMBER_SHARD, "A smaller shard of Ember crystal.");
+		addTooltip(RegistryManager.EMBER_GRIT, "Ground Ember that still burns hot enough for fuel.");
+		addTooltip(RegistryManager.CAMINITE_BLEND, "A dry blend that fires into caminite.");
+		addTooltip(RegistryManager.CAMINITE_BRICK, "A fired caminite brick for machines and masonry.");
+		addTooltip(RegistryManager.ARCHAIC_BRICK, "A worn brick from old Emberworks.");
+		addTooltip(RegistryManager.ANCIENT_MOTIVE_CORE, "An old core that lets armor carry stranger work.");
+		addTooltip(RegistryManager.ASH, "Useful ash left after a clean burn.");
+		addTooltip(RegistryManager.ASHEN_FABRIC, "Dark fabric prepared for ashen gear.");
+		addTooltip(RegistryManager.EMBER_CRYSTAL_CLUSTER, "A cluster of Ember crystal with a richer heart.");
+		addTooltip(RegistryManager.WILDFIRE_CORE, "A fierce core used in hotter machines.");
+		addTooltip(RegistryManager.ISOLATED_MATERIA, "Materia separated from the noise around it.");
+		addTooltip(RegistryManager.ADHESIVE, "A sticky binder for delicate Emberwork.");
+		addTooltip(RegistryManager.ARCHAIC_CIRCUIT, "An old circuit that still answers to Ember.");
+
+		addTooltip(RegistryManager.SUPERHEATER, "An augment piece for pushing heat past its usual limit.");
+		addTooltip(RegistryManager.CINDER_JET, "An augment piece that turns stored force into a sharp burst.");
+		addTooltip(RegistryManager.BLASTING_CORE, "An augment piece for hard strikes and rougher mining.");
+		addTooltip(RegistryManager.CASTER_ORB, "An augment piece for casting small Ember shots.");
+		addTooltip(RegistryManager.RESONATING_BELL, "An augment piece that rings out to matching blocks.");
+		addTooltip(RegistryManager.FLAME_BARRIER, "An augment piece that answers a blow with fire.");
+		addTooltip(RegistryManager.ELDRITCH_INSIGNIA, "An augment piece that unsettles hostile minds.");
+		addTooltip(RegistryManager.INTELLIGENT_APPARATUS, "An augment piece that draws a little more wisdom from battle.");
+		addTooltip(RegistryManager.DIFFRACTION_BARREL, "An augment piece that scatters Ember shots into a wider spread.");
+		addTooltip(RegistryManager.FOCAL_LENS, "An augment piece that sharpens Ember shots into a cleaner path.");
+		addTooltip(RegistryManager.SHIFTING_SCALES, "An augment piece that grows protective scales while you keep still.");
+		addTooltip(RegistryManager.WINDING_GEARS, "An augment piece that winds a tool up for repeated work.");
+
+		addTooltip(RegistryManager.RAW_CAMINITE_PLATE, "A soft caminite plate, ready to be fired.");
+		addTooltip(RegistryManager.RAW_FLAT_STAMP, "An unfired stamp blank for simple pressing.");
+		addTooltip(RegistryManager.RAW_INGOT_STAMP, "An unfired stamp blank for ingots.");
+		addTooltip(RegistryManager.RAW_NUGGET_STAMP, "An unfired stamp blank for nuggets.");
+		addTooltip(RegistryManager.RAW_PLATE_STAMP, "An unfired stamp blank for plates.");
+		addTooltip(RegistryManager.RAW_GEAR_STAMP, "An unfired stamp blank for gears.");
+		addTooltip(RegistryManager.CAMINITE_PLATE, "A fired caminite plate for stronger machine work.");
+		addTooltip(RegistryManager.FLAT_STAMP, "Presses molten metal into flat pieces.");
+		addTooltip(RegistryManager.INGOT_STAMP, "Presses molten metal into ingots.");
+		addTooltip(RegistryManager.NUGGET_STAMP, "Presses molten metal into nuggets.");
+		addTooltip(RegistryManager.PLATE_STAMP, "Presses molten metal into plates.");
+		addTooltip(RegistryManager.GEAR_STAMP, "Presses molten metal into gears.");
+
+		addTooltip(RegistryManager.IRON_ASPECTUS, "Iron aspectus for steady alchemy.");
+		addTooltip(RegistryManager.COPPER_ASPECTUS, "Copper aspectus for lively alchemy.");
+		addTooltip(RegistryManager.LEAD_ASPECTUS, "Lead aspectus for heavy alchemy.");
+		addTooltip(RegistryManager.SILVER_ASPECTUS, "Silver aspectus for finer alchemy.");
+		addTooltip(RegistryManager.DAWNSTONE_ASPECTUS, "Dawnstone aspectus for warm alchemy.");
+		addTooltip(RegistryManager.MITHRIL_ASPECTUS, "Mithril aspectus for rare alchemy.");
+
+		addTooltip(RegistryManager.RAW_LEAD, "Raw lead, dull and heavy.");
+		addTooltip(RegistryManager.LEAD_INGOT, "A soft lead ingot for heavier craft.");
+		addTooltip(RegistryManager.LEAD_NUGGET, "A small piece of lead.");
+		addTooltip(RegistryManager.LEAD_PLATE, "A lead plate for heavier machine parts.");
+		addTooltip(RegistryManager.RAW_SILVER, "Raw silver with a pale shine.");
+		addTooltip(RegistryManager.SILVER_INGOT, "A bright silver ingot for finer craft.");
+		addTooltip(RegistryManager.SILVER_NUGGET, "A small piece of silver.");
+		addTooltip(RegistryManager.SILVER_PLATE, "A silver plate for finer machine parts.");
+		addTooltip(RegistryManager.DAWNSTONE_INGOT, "A warm alloy ingot for Ember-touched craft.");
+		addTooltip(RegistryManager.DAWNSTONE_NUGGET, "A small piece of dawnstone.");
+		addTooltip(RegistryManager.DAWNSTONE_PLATE, "A dawnstone plate for stronger Emberwork.");
+		addTooltip(RegistryManager.MITHRIL_INGOT, "A rare mithril ingot for delicate power.");
+		addTooltip(RegistryManager.MITHRIL_NUGGET, "A small piece of mithril.");
+		addTooltip(RegistryManager.MITHRIL_PLATE, "A mithril plate for rare machine parts.");
+		addTooltip(RegistryManager.IRON_PLATE, "An iron plate pressed flat for machine work.");
+		addTooltip(RegistryManager.COPPER_PLATE, "A copper plate pressed flat for machine work.");
+		addTooltip(RegistryManager.COPPER_NUGGET, "A small piece of copper.");
+		addBlockTooltip(RegistryManager.LEAD_ORE, "Lead ore waiting to be smelted down.");
+		addBlockTooltip(RegistryManager.DEEPSLATE_LEAD_ORE, "Deep lead ore waiting to be smelted down.");
+		addBlockTooltip(RegistryManager.RAW_LEAD_BLOCK, "Raw lead packed into a heavy block.");
+		addBlockTooltip(RegistryManager.LEAD_BLOCK, "Lead gathered into a dense metal block.");
+		addBlockTooltip(RegistryManager.SILVER_ORE, "Silver ore waiting to be smelted down.");
+		addBlockTooltip(RegistryManager.DEEPSLATE_SILVER_ORE, "Deep silver ore waiting to be smelted down.");
+		addBlockTooltip(RegistryManager.RAW_SILVER_BLOCK, "Raw silver packed into a pale block.");
+		addBlockTooltip(RegistryManager.SILVER_BLOCK, "Silver gathered into a bright metal block.");
+		addBlockTooltip(RegistryManager.DAWNSTONE_BLOCK, "Dawnstone gathered into a warm metal block.");
+		addBlockTooltip(RegistryManager.MITHRIL_BLOCK, "Mithril gathered into a rare metal block.");
+
+		addToolTooltips(RegistryManager.LEAD_TOOLS, "Lead", "heavy and patient");
+		addToolTooltips(RegistryManager.SILVER_TOOLS, "Silver", "bright and precise");
+		addToolTooltips(RegistryManager.DAWNSTONE_TOOLS, "Dawnstone", "warm with Ember");
+
+		addTooltip(CuriosCompat.EMBER_RING, "A ring that keeps extra Ember close at hand.");
+		addTooltip(CuriosCompat.EMBER_BELT, "A belt that keeps extra Ember close at hand.");
+		addTooltip(CuriosCompat.EMBER_AMULET, "An amulet that keeps extra Ember close at hand.");
+		addTooltip(CuriosCompat.DAWNSTONE_MAIL, "A fitted mail shirt worked from dawnstone.");
+		addTooltip(CuriosCompat.ASHEN_AMULET, "An amulet that turns a little danger into ash.");
+		addTooltip(CuriosCompat.NONBELEIVER_AMULET, "An amulet for those who would rather not listen.");
+		addTooltip(CuriosCompat.EXPLOSION_CHARM, "A charm that catches one violent blast before breaking.");
+		addBlockTooltip(CuriosCompat.EXPLOSION_PEDESTAL, "A small pedestal for keeping an Explosion Charm ready.");
+
+		addTooltip(RegistryManager.ANCIENT_GOLEM_SPAWN_EGG, "Calls forth an Ancient Golem.");
+	}
+
+	private void addCrystalSeedTooltips() {
+		addBlockTooltip(RegistryManager.COPPER_CRYSTAL_SEED.BLOCK, "A copper seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.IRON_CRYSTAL_SEED.BLOCK, "An iron seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.GOLD_CRYSTAL_SEED.BLOCK, "A gold seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.LEAD_CRYSTAL_SEED.BLOCK, "A lead seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.SILVER_CRYSTAL_SEED.BLOCK, "A silver seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.NICKEL_CRYSTAL_SEED.BLOCK, "A nickel seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.TIN_CRYSTAL_SEED.BLOCK, "A tin seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.ALUMINUM_CRYSTAL_SEED.BLOCK, "An aluminum seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.ZINC_CRYSTAL_SEED.BLOCK, "A zinc seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.PLATINUM_CRYSTAL_SEED.BLOCK, "A platinum seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.URANIUM_CRYSTAL_SEED.BLOCK, "A uranium seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.DAWNSTONE_CRYSTAL_SEED.BLOCK, "A dawnstone seed that grows when fed with Ember.");
+		addBlockTooltip(RegistryManager.MITHRIL_CRYSTAL_SEED.BLOCK, "A mithril seed that grows when fed with Ember.");
+		addTooltip(RegistryManager.DYNAMIC_CRYSTAL_SEED_ITEM, "A metal seed that follows the metal worked into it.");
+	}
+
 	public void addSubtitle(CompatRegistryObject<SoundEvent> soundEvent, String subtitle) {
 		add("subtitles." + Embers.MODID + "." + soundEvent.getId().getPath(), subtitle);
 	}
@@ -1285,6 +1517,37 @@ public class EmbersLang extends LanguageProvider {
 		addItem(set.PICKAXE, name + " Pickaxe");
 		addItem(set.AXE, name + " Axe");
 		addItem(set.HOE, name + " Hoe");
+	}
+
+	public void addToolTooltips(ToolSet set, String name, String note) {
+		addTooltip(set.SWORD, "A " + name.toLowerCase() + " sword, " + note + ".");
+		addTooltip(set.SHOVEL, "A " + name.toLowerCase() + " shovel, " + note + ".");
+		addTooltip(set.PICKAXE, "A " + name.toLowerCase() + " pickaxe, " + note + ".");
+		addTooltip(set.AXE, "A " + name.toLowerCase() + " axe, " + note + ".");
+		addTooltip(set.HOE, "A " + name.toLowerCase() + " hoe, " + note + ".");
+	}
+
+	public void addTooltip(Supplier<? extends Item> key, String... lines) {
+		addTooltip(key.get().getDescriptionId(), lines);
+	}
+
+	public void addBlockTooltip(Supplier<? extends Block> key, String... lines) {
+		addTooltip(key.get().getDescriptionId(), lines);
+	}
+
+	public void addDecoTooltip(StoneDecoBlocks deco, String line) {
+		if (deco.stairs != null)
+			addBlockTooltip(deco.stairs, line);
+		if (deco.slab != null)
+			addBlockTooltip(deco.slab, line);
+		if (deco.wall != null)
+			addBlockTooltip(deco.wall, line);
+	}
+
+	public void addTooltip(String descriptionId, String... lines) {
+		for (int i = 0; i < lines.length; i++) {
+			add(descriptionId + ".tooltip" + (i == 0 ? "" : "." + i), lines[i]);
+		}
 	}
 
 	public void addAugment(IAugment augment, String name) {

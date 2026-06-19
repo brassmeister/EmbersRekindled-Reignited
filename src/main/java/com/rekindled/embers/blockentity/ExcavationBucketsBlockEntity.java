@@ -25,7 +25,7 @@ public class ExcavationBucketsBlockEntity extends BlockEntity {
 
 	public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
 		if (!this.isRemoved() && level.getBlockState(worldPosition).hasProperty(BlockStateProperties.FACING)) {
-			if (cap == EmbersCapabilities.UPGRADE_PROVIDER_CAPABILITY && side.getOpposite() == level.getBlockState(worldPosition).getValue(BlockStateProperties.FACING)) {
+			if (cap == EmbersCapabilities.UPGRADE_PROVIDER_CAPABILITY && (side == null || side.getOpposite() == level.getBlockState(worldPosition).getValue(BlockStateProperties.FACING))) {
 				return upgrade.getCapability(cap, side);
 			}
 		}

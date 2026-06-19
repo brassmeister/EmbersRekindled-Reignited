@@ -561,6 +561,8 @@ public class EmbersClientEvents {	public static int ticks = 0;
 	public static int tickStartedHoldingCtrl = Integer.MAX_VALUE;
 
 	public static void onTooltip(RenderTooltipEvent.GatherComponents event) {
+		addTranslatedDescriptionTooltip(event);
+
 		Minecraft mc = Minecraft.getInstance();
 		int codexIndex = -1;
 		if (ConfigManager.CODEX_REQUIRED_FOR_LOOKUP.get() && mc.player != null) {
@@ -618,6 +620,27 @@ public class EmbersClientEvents {	public static int ticks = 0;
 					event.getTooltipElements().add(Either.right(new GlowingTextTooltip(Component.translatable(Embers.MODID + ".tooltip.augment." + augment.getName().toLanguageKey(), Component.translatable(getFormattedModifierLevel(level))))));
 				}
 			}
+		}
+	}
+
+	private static void addTranslatedDescriptionTooltip(RenderTooltipEvent.GatherComponents event) {
+		if (event.getItemStack().isEmpty()) {
+			return;
+		}
+
+		String key = event.getItemStack().getDescriptionId() + ".tooltip";
+		if (!I18n.exists(key)) {
+			return;
+		}
+
+		int index = Math.min(1, event.getTooltipElements().size());
+		event.getTooltipElements().add(index++, Either.left(Component.translatable(key).withStyle(ChatFormatting.GRAY)));
+		for (int line = 1; line < 8; line++) {
+			String lineKey = key + "." + line;
+			if (!I18n.exists(lineKey)) {
+				break;
+			}
+			event.getTooltipElements().add(index++, Either.left(Component.translatable(lineKey).withStyle(ChatFormatting.GRAY)));
 		}
 	}
 

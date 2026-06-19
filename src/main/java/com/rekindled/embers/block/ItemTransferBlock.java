@@ -122,7 +122,10 @@ public class ItemTransferBlock extends EmbersEntityBlock implements SimpleWaterl
 	@Nullable
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext context) {
-		Direction facing = getPlacementFacing(context);
+		Direction facing = context.getNearestLookingDirection().getOpposite();
+		if (context.getPlayer() != null && context.getPlayer().isSecondaryUseActive()) {
+			facing = facing.getOpposite();
+		}
 		return this.defaultBlockState().setValue(BlockStateProperties.FACING, facing).setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(context.getLevel().getFluidState(context.getClickedPos()).getType() == Fluids.WATER));
 	}
 
@@ -146,7 +149,7 @@ public class ItemTransferBlock extends EmbersEntityBlock implements SimpleWaterl
 
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
-		return null;
+		return pLevel.isClientSide ? null : createTickerHelper(pBlockEntityType, RegistryManager.ITEM_TRANSFER_ENTITY.get(), ItemTransferBlockEntity::serverTick);
 	}
 
 	@Override

@@ -98,7 +98,11 @@ public class MnemonicInscriberBlock extends EmbersEntityBlock implements SimpleW
 	@Nullable
 	@Override
 	public BlockState getStateForPlacement(BlockPlaceContext pContext) {
-		BlockState blockstate = this.defaultBlockState().setValue(BlockStateProperties.FACING, getPlacementFacing(pContext));
+		Direction facing = pContext.getNearestLookingDirection().getOpposite();
+		if (pContext.getPlayer() != null && pContext.getPlayer().isSecondaryUseActive()) {
+			facing = facing.getOpposite();
+		}
+		BlockState blockstate = this.defaultBlockState().setValue(BlockStateProperties.FACING, facing);
 		return blockstate.setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(pContext.getLevel().getFluidState(pContext.getClickedPos()).getType() == Fluids.WATER));
 	}
 
