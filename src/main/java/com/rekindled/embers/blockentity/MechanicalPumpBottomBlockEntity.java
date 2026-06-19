@@ -2,11 +2,13 @@ package com.rekindled.embers.blockentity;
 
 import java.util.List;
 
+import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.capabilities.EmbersCapabilities;
 import com.rekindled.embers.api.event.DialInformationEvent;
 import com.rekindled.embers.api.event.EmberEvent;
 import com.rekindled.embers.api.power.IEmberCapability;
+import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
 import com.rekindled.embers.api.tile.IExtraDialInformation;
 import com.rekindled.embers.api.tile.IMechanicallyPowered;
 import com.rekindled.embers.api.tile.IUpgradeable;
@@ -39,7 +41,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 
-public class MechanicalPumpBottomBlockEntity extends BlockEntity implements IMechanicallyPowered, IExtraDialInformation, IUpgradeable {
+public class MechanicalPumpBottomBlockEntity extends BlockEntity implements IMechanicallyPowered, IExtraDialInformation, IExtraCapabilityInformation, IUpgradeable {
 
 	public IEmberCapability capability = new DefaultEmberCapability() {
 		@Override
@@ -84,6 +86,8 @@ public class MechanicalPumpBottomBlockEntity extends BlockEntity implements IMec
 	@Override
 	public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
 		CompoundTag nbt = super.getUpdateTag(registries);
+		capability.writeToNBT(nbt);
+		nbt.putInt("progress", progress);
 		nbt.putInt("totalProgress", totalProgress);
 		return nbt;
 	}
@@ -193,8 +197,19 @@ public class MechanicalPumpBottomBlockEntity extends BlockEntity implements IMec
 		UpgradeUtil.throwEvent(this, new DialInformationEvent(this, information, dialType), upgrades);
 	}
 
+	@Override
+	public boolean hasCapabilityDescription(Capability<?> capability) {
+		return capability == EmbersCapabilities.EMBER_CAPABILITY;
+	}
+
+	@Override
+	public void addCapabilityDescription(List<Component> strings, Capability<?> capability, Direction facing) {
+		if (capability == EmbersCapabilities.EMBER_CAPABILITY) {
+			strings.add(IExtraCapabilityInformation.formatCapability(IExtraCapabilityInformation.EnumIOType.INPUT, Embers.MODID + ".tooltip.goggles.ember", null));
+		}
+	}
+
 	public void invalidateCaps() {
-		
 		capability.invalidate();
 	}
 

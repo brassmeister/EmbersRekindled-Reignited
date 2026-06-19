@@ -174,11 +174,11 @@ public class PressureRefineryBottomBlockEntity extends FluidHandlerBlockEntity i
 		if (!this.isRemoved() && side != Direction.DOWN && cap == ForgeCapabilities.ITEM_HANDLER) {
 			return ForgeCapabilities.ITEM_HANDLER.orEmpty(cap, holder);
 		}
-		return LazyOptional.empty();
+		return super.getCapability(cap, side);
 	}
 
 	public void invalidateCaps() {
-		
+		super.invalidateCaps();
 		holder.invalidate();
 	}
 
@@ -194,7 +194,7 @@ public class PressureRefineryBottomBlockEntity extends FluidHandlerBlockEntity i
 
 	@Override
 	public boolean hasCapabilityDescription(Capability<?> capability) {
-		return capability == ForgeCapabilities.ITEM_HANDLER;
+		return capability == ForgeCapabilities.ITEM_HANDLER || capability == ForgeCapabilities.FLUID_HANDLER;
 	}
 
 	@Override

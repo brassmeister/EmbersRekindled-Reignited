@@ -1,13 +1,18 @@
 package com.rekindled.embers.item;
 
+import java.util.List;
+
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.util.DynamicMetalSeeds;
 import com.rekindled.embers.util.ItemData;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Block;
 
 public class DynamicCrystalSeedBlockItem extends BlockItem {
@@ -55,5 +60,14 @@ public class DynamicCrystalSeedBlockItem extends BlockItem {
 			return Component.literal("Dynamic Crystal Seed");
 		}
 		return Component.literal(DynamicMetalSeeds.displayName(getMetal(stack)) + " Crystal Seed");
+	}
+
+	@Override
+	public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+		super.appendHoverText(stack, context, tooltip, flag);
+		if (hasMetal(stack)) {
+			DynamicMetalSeeds.getVariant(getMetal(stack))
+					.ifPresent(variant -> tooltip.add(Component.literal("From: " + variant.modName()).withStyle(ChatFormatting.GRAY)));
+		}
 	}
 }

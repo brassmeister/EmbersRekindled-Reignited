@@ -223,6 +223,10 @@ public class EmberEmitterBlock extends EmbersEntityBlock implements SimpleWaterl
 	}
 
 	private static boolean connected(Direction direction, BlockState state) {
+		return connectsToAttachable(direction, state);
+	}
+
+	public static boolean connectsToAttachable(Direction direction, BlockState state) {
 		if (!state.is(EmbersBlockTags.EMITTER_CONNECTION)) {
 			return false;
 		}

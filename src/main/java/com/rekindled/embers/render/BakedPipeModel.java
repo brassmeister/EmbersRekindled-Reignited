@@ -9,8 +9,11 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.BakedModelWrapper;
 import net.neoforged.neoforge.client.model.data.ModelData;
@@ -34,6 +37,15 @@ public class BakedPipeModel extends BakedModelWrapper<BakedModel> {
 
 	public static int getCacheIndex(int[] data) {
 		return (((((data[0] * 3 + data[1]) * 3 + data[2]) * 3 + data[3]) * 3 + data[4]) * 3) + data[5];
+	}
+
+	@Override
+	public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData modelData) {
+		BlockEntity blockEntity = level.getBlockEntity(pos);
+		if (blockEntity instanceof PipeBlockEntityBase pipe) {
+			return pipe.getModelData();
+		}
+		return super.getModelData(level, pos, state, modelData);
 	}
 
 	@Override

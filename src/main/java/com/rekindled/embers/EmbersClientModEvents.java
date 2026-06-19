@@ -38,6 +38,7 @@ import com.rekindled.embers.blockentity.render.MnemonicInscriberBlockEntityRende
 import com.rekindled.embers.blockentity.render.ReservoirBlockEntityRenderer;
 import com.rekindled.embers.blockentity.render.StampBaseBlockEntityRenderer;
 import com.rekindled.embers.blockentity.render.StamperBlockEntityRenderer;
+import com.rekindled.embers.client.DynamicMetalSeedColors;
 import com.rekindled.embers.compat.create.CreateCompat;
 import com.rekindled.embers.compat.createthrusters.ThrustersCompat;
 import com.rekindled.embers.compat.curios.CuriosCompatClient;
@@ -163,6 +164,7 @@ public final class EmbersClientModEvents {
 	static void addResourceListener(RegisterClientReloadListenersEvent event) {
 		event.registerReloadListener(new DecimalFormats());
 		event.registerReloadListener(new EmbersColors());
+		event.registerReloadListener(new DynamicMetalSeedColors());
 	}
 
 	@SubscribeEvent
@@ -245,7 +247,7 @@ public final class EmbersClientModEvents {
 		}
 		event.register(emberContainerColor, RegistryManager.EMBER_JAR.get(), RegistryManager.EMBER_CARTRIDGE.get());
 		event.register(new TyrfingItem.ColorHandler(), RegistryManager.TYRFING.get());
-		event.register((stack, tintIndex) -> tintIndex == 0 ? DynamicCrystalSeedBlockItem.getColor(stack) : 0xFFFFFF, RegistryManager.DYNAMIC_CRYSTAL_SEED_ITEM.get());
+		event.register((stack, tintIndex) -> tintIndex == 0 ? DynamicMetalSeedColors.getColor(stack) : 0xFFFFFF, RegistryManager.DYNAMIC_CRYSTAL_SEED_ITEM.get());
 	}
 
 	@SubscribeEvent
@@ -257,6 +259,8 @@ public final class EmbersClientModEvents {
 	static void registerAdditionalModels(ModelEvent.RegisterAdditional event) {
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/atmospheric_bellows_top")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/atmospheric_bellows_leather")));
+		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/mechanical_pump_piston_bottom")));
+		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/mechanical_pump_piston_top")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/stamper_arm")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/automatic_hammer_end")));
 		event.register(ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(Embers.MODID, "block/inferno_forge_hatch")));

@@ -10,6 +10,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.rekindled.embers.blockentity.CrystalSeedBlockEntity;
+import com.rekindled.embers.client.DynamicMetalSeedColors;
 import com.rekindled.embers.render.EmbersRenderTypes;
 
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -30,9 +31,10 @@ public class CrystalSeedBlockEntityRenderer implements BlockEntityRenderer<Cryst
 	public void render(CrystalSeedBlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
 		if (blockEntity != null) {
 			VertexConsumer buffer = bufferSource.getBuffer(EmbersRenderTypes.CRYSTAL_SEED.apply(blockEntity.texture));
-			red = blockEntity.tintColor >> 16 & 255;
-			green = blockEntity.tintColor >> 8 & 255;
-			blue = blockEntity.tintColor & 255;
+			int tintColor = DynamicMetalSeedColors.getColor(blockEntity.type, blockEntity.tintColor);
+			red = tintColor >> 16 & 255;
+			green = tintColor >> 8 & 255;
+			blue = tintColor & 255;
 
 			poseStack.pushPose();
 			poseStack.translate(0.5, 0.5, 0.5);

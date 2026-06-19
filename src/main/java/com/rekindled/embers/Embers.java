@@ -21,6 +21,7 @@ import com.rekindled.embers.recipe.HeatIngredient;
 import com.rekindled.embers.research.ResearchManager;
 import com.rekindled.embers.util.CapabilityCompat;
 import com.rekindled.embers.util.CompatRegistryObject;
+import com.rekindled.embers.util.DynamicMetalSeedBlacklistReloadListener;
 import com.rekindled.embers.util.Misc;
 import com.rekindled.embers.worldgen.EmbersLateWorldgen;
 
@@ -125,6 +126,7 @@ public class Embers {
 		NeoForge.EVENT_BUS.addListener(EventPriority.LOW, EmbersEvents::onArrowLoose);
 		NeoForge.EVENT_BUS.addListener(EmbersEvents::onAnvilUpdate);
 		NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, TagsUpdatedEvent.class, e -> Misc.tagItems.clear());
+		NeoForge.EVENT_BUS.addListener(DynamicMetalSeedBlacklistReloadListener::onAddReloadListeners);
 		NeoForge.EVENT_BUS.addListener(EmbersEvents::onLevelLoad);
 		NeoForge.EVENT_BUS.addListener(EmbersEvents::onServerTick);
 		NeoForge.EVENT_BUS.addListener(EmbersEvents::onExplosion);
