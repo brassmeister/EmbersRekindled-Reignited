@@ -2,6 +2,7 @@ package com.rekindled.embers.network.message;
 
 import java.util.Random;
 
+import com.rekindled.embers.blockentity.CrystalCellBlockEntity;
 import com.rekindled.embers.datagen.EmbersSounds;
 import com.rekindled.embers.particle.GlowParticleOptions;
 
@@ -10,6 +11,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -55,6 +57,10 @@ public class MessageCrystalCellGrowFX {
 			Level level = net.minecraft.client.Minecraft.getInstance().level;
 			if (level == null) {
 				return;
+			}
+			BlockEntity blockEntity = level.getBlockEntity(msg.pos);
+			if (blockEntity instanceof CrystalCellBlockEntity crystalCell) {
+				crystalCell.capability.setEmberCapacity(msg.capacity);
 			}
 			double angle = random.nextDouble() * 2.0 * Math.PI;
 			double x = msg.pos.getX() + 0.5 + 0.5 * Math.sin(angle);

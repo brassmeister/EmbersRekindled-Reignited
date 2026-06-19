@@ -6,14 +6,17 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.capabilities.EmbersCapabilities;
 import com.rekindled.embers.compat.legacy.capabilities.Capability;
 import com.rekindled.embers.compat.legacy.capabilities.ForgeCapabilities;
 import com.rekindled.embers.compat.legacy.capabilities.ICapabilityProvider;
 import com.rekindled.embers.compat.legacy.LazyOptional;
+import com.rekindled.embers.research.capability.IResearchCapability;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -61,6 +64,10 @@ public final class CapabilityCompat {
 	public static <T> LazyOptional<T> getCapability(@Nullable Object provider, Capability<T> capability, @Nullable Direction side) {
 		if (provider == null) {
 			return LazyOptional.empty();
+		}
+		if (provider instanceof Player player && capability == EmbersCapabilities.RESEARCH_CAPABILITY) {
+			IResearchCapability research = player.getData(RegistryManager.RESEARCH_ATTACHMENT.get());
+			return LazyOptional.of(() -> research).cast();
 		}
 		if (provider instanceof ICapabilityProvider capabilityProvider) {
 			LazyOptional<T> optional = capabilityProvider.getCapability(capability, side);

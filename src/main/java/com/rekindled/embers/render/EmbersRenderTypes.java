@@ -130,6 +130,10 @@ public class EmbersRenderTypes extends RenderType {
 		return ConfigManager.RENDER_FALLBACK.get() || isShaderPackActive() ? FIELD_CHART_FALLBACK : FIELD_CHART;
 	}
 
+	public static RenderType crystal() {
+		return ConfigManager.RENDER_FALLBACK.get() || isShaderPackActive() ? CRYSTAL_FALLBACK : CRYSTAL;
+	}
+
 	private static ShaderInstance getEmberParticleShader() {
 		int fancyness = Minecraft.getInstance().options.graphicsMode().get().getId();
 		return fancyness >= GraphicsStatus.FABULOUS.getId() ? emberParticleFabShader : emberParticleShader;

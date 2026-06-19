@@ -62,6 +62,9 @@ public abstract class CreateBlazeBurnerBlockEntityMixin extends SmartBlockEntity
 	@Unique private boolean embers$kindledFromStoredFuel;
 	@Unique private boolean embers$superheatedFromStoredFuel;
 	@Unique private boolean embers$heatedByHearthCoil;
+	@Unique private boolean embers$lastWantsSuperheat;
+	@Unique private boolean embers$lastHearthCoilHeated;
+	@Unique private boolean embers$lastHearthCoilSuperheated;
 	@Unique private BlazeBurnerBlockEntity.FuelType embers$preSuperheatFuel = BlazeBurnerBlockEntity.FuelType.NONE;
 	@Unique private int embers$preSuperheatBurnTime;
 
@@ -129,9 +132,6 @@ public abstract class CreateBlazeBurnerBlockEntityMixin extends SmartBlockEntity
 				&& remainingBurnTime > EMBERS_KINDLED_WINDOW) {
 			embers$kindledFromStoredFuel = false;
 		}
-		if (!embers$shouldRefreshEmberFuelState(playSound)) {
-			return;
-		}
 		boolean hearthCoilHeated = CreateBlazeBurnerHelper.isHeatedByHearthCoil(level, worldPosition);
 
 		List<UpgradeContext> upgrades = UpgradeUtil.getUpgrades(level, worldPosition, Direction.values());
@@ -144,8 +144,17 @@ public abstract class CreateBlazeBurnerBlockEntityMixin extends SmartBlockEntity
 				BlazeBurnerBlock.HeatLevel.KINDLED, upgrades);
 		boolean wantsSuperheat = UpgradeUtil.getOtherParameter(this, "create_blaze_burner_superheat", false, upgrades)
 				|| desiredHeat.isAtLeast(BlazeBurnerBlock.HeatLevel.SEETHING);
-		boolean managedSpecialFuel = embers$superheatedFromStoredFuel || embers$heatedByHearthCoil || remainingBurnTime <= EMBERS_SEETHING_REFRESH_THRESHOLD;
-		if (activeFuel == BlazeBurnerBlockEntity.FuelType.SPECIAL && !managedSpecialFuel && !wantsSuperheat && !hearthCoilHeated) {
+		boolean shouldRefresh = embers$shouldRefreshEmberFuelState(playSound, hearthCoilHeated, hearthCoilSuperheated, wantsSuperheat);
+		embers$lastHearthCoilHeated = hearthCoilHeated;
+		embers$lastHearthCoilSuperheated = hearthCoilSuperheated;
+		embers$lastWantsSuperheat = wantsSuperheat;
+		if (!shouldRefresh) {
+			return;
+		}
+		if (activeFuel == BlazeBurnerBlockEntity.FuelType.SPECIAL
+				&& !embers$superheatedFromStoredFuel
+				&& !embers$heatedByHearthCoil
+				&& !hearthCoilHeated) {
 			return;
 		}
 		BlazeBurnerBlock.HeatLevel previousHeat = getHeatLevelFromBlock();
@@ -190,8 +199,8 @@ public abstract class CreateBlazeBurnerBlockEntityMixin extends SmartBlockEntity
 			}
 		} else if (embers$superheatedFromStoredFuel) {
 			embers$superheatedFromStoredFuel = false;
-			if (embers$preSuperheatFuel == BlazeBurnerBlockEntity.FuelType.NORMAL && embers$preSuperheatBurnTime > 0) {
-				activeFuel = BlazeBurnerBlockEntity.FuelType.NORMAL;
+			if (embers$preSuperheatFuel != BlazeBurnerBlockEntity.FuelType.NONE && embers$preSuperheatBurnTime > 0) {
+				activeFuel = embers$preSuperheatFuel;
 				remainingBurnTime = Math.max(embers$preSuperheatBurnTime, 1);
 				changed = true;
 			} else if (embers$hasFuel(normalCost)) {
@@ -236,8 +245,13 @@ public abstract class CreateBlazeBurnerBlockEntityMixin extends SmartBlockEntity
 	}
 
 	@Unique
-	private boolean embers$shouldRefreshEmberFuelState(boolean forced) {
+	private boolean embers$shouldRefreshEmberFuelState(boolean forced, boolean hearthCoilHeated, boolean hearthCoilSuperheated, boolean wantsSuperheat) {
 		if (forced || activeFuel == BlazeBurnerBlockEntity.FuelType.NONE) {
+			return true;
+		}
+		if (hearthCoilHeated != embers$lastHearthCoilHeated
+				|| hearthCoilSuperheated != embers$lastHearthCoilSuperheated
+				|| wantsSuperheat != embers$lastWantsSuperheat) {
 			return true;
 		}
 		if (embers$kindledFromStoredFuel && activeFuel != BlazeBurnerBlockEntity.FuelType.NORMAL) {

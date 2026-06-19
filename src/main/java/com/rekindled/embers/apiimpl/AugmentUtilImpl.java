@@ -99,7 +99,7 @@ public class AugmentUtilImpl implements IAugmentUtil {
 				augmentCompound.putString("name", augment.getName().toString());
 				ListTag items = new ListTag();
 				augmentCompound.put("items", items);
-				items.add(ItemData.save(augmentStack));
+				addAugmentItem(items, augmentStack);
 				augmentCompound.putInt("level", 1);
 				list.add(augmentCompound);
 			} else {
@@ -108,7 +108,7 @@ public class AugmentUtilImpl implements IAugmentUtil {
 					if (augmentCompound.contains("name")) {
 						if (augmentCompound.getString("name").compareTo(augment.getName().toString()) == 0) {
 							ListTag items = augmentCompound.getList("items", Tag.TAG_COMPOUND);
-							items.add(ItemData.save(augmentStack));
+							addAugmentItem(items, augmentStack);
 							augmentCompound.putInt("level", level + 1);
 						}
 					}
@@ -116,6 +116,12 @@ public class AugmentUtilImpl implements IAugmentUtil {
 			}
 		});
 		augment.onApply(stack);
+	}
+
+	private static void addAugmentItem(ListTag items, ItemStack augmentStack) {
+		if (!augmentStack.isEmpty()) {
+			items.add(ItemData.save(augmentStack));
+		}
 	}
 
 	@Override

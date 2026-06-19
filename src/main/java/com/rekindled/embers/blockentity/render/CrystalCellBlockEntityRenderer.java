@@ -4,23 +4,18 @@ import java.util.Random;
 
 import org.joml.Matrix4f;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import com.rekindled.embers.ConfigManager;
-import com.rekindled.embers.Embers;
 import com.rekindled.embers.blockentity.CrystalCellBlockEntity;
 import com.rekindled.embers.render.EmbersRenderTypes;
 
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.resources.ResourceLocation;
 
 public class CrystalCellBlockEntityRenderer implements BlockEntityRenderer<CrystalCellBlockEntity> {
 
-	public ResourceLocation texture = ResourceLocation.parse(Embers.MODID + ":textures/block/crystal_material.png");
 	Random random = new Random();
 
 	public CrystalCellBlockEntityRenderer(BlockEntityRendererProvider.Context pContext) {
@@ -56,10 +51,7 @@ public class CrystalCellBlockEntityRenderer implements BlockEntityRenderer<Cryst
 			}
 		}
 
-		RenderSystem.setShaderTexture(0, texture);
-		RenderSystem.disableCull();
-		//RenderSystem.enableTexture();
-		VertexConsumer buffer = bufferSource.getBuffer(ConfigManager.RENDER_FALLBACK.get() ? EmbersRenderTypes.CRYSTAL_FALLBACK : EmbersRenderTypes.CRYSTAL);
+		VertexConsumer buffer = bufferSource.getBuffer(EmbersRenderTypes.crystal());
 
 		for (float j = 0; j < 12; j++) {
 
@@ -100,8 +92,6 @@ public class CrystalCellBlockEntityRenderer implements BlockEntityRenderer<Cryst
 			}
 			poseStack.popPose();
 		}
-
-		RenderSystem.enableCull();
 	}
 
 	private float getGrowthFactor(float capacityFactor, double emberCapacity) {

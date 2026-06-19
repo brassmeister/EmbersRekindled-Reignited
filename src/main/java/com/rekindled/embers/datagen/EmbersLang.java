@@ -171,7 +171,7 @@ public class EmbersLang extends LanguageProvider {
 		addItem(RegistryManager.GRANDHAMMER, "Grandhammer");
 		addItem(RegistryManager.BLAZING_RAY, "Blazing Ray");
 		addItem(RegistryManager.CINDER_STAFF, "Cinder Staff");
-		addItem(RegistryManager.MUSIC_DISC_7F_PATTERNS, "Music Disc");
+		addItem(RegistryManager.MUSIC_DISC_7F_PATTERNS, "Music Disc - 7F Patterns");
 		add(RegistryManager.MUSIC_DISC_7F_PATTERNS.get().getDescriptionId() + ".desc", "Ultrasyd - 7F Patterns");
 		addItem(RegistryManager.ALCHEMICAL_WASTE, "Alchemical Waste");
 		addItem(RegistryManager.ALCHEMICAL_NOTE, "Alchemical Note");

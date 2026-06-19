@@ -86,6 +86,7 @@ public class Embers {
 		RegistryManager.MENU_TYPES.register(modEventBus);
 		RegistryManager.STRUCTURE_TYPES.register(modEventBus);
 		RegistryManager.STRUCTURE_PROCESSOR_TYPES.register(modEventBus);
+		RegistryManager.ATTACHMENT_TYPES.register(modEventBus);
 		EmbersSounds.init();
 
 		ConfigManager.register(modContainer);

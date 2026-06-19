@@ -16,7 +16,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
@@ -227,6 +229,9 @@ public class EmberEmitterBlock extends EmbersEntityBlock implements SimpleWaterl
 	}
 
 	public static boolean connectsToAttachable(Direction direction, BlockState state) {
+		if (state.getBlock() instanceof LeverBlock || state.getBlock() instanceof ButtonBlock) {
+			return connectsToFaceAttached(direction, state);
+		}
 		if (!state.is(EmbersBlockTags.EMITTER_CONNECTION)) {
 			return false;
 		}
@@ -270,6 +275,21 @@ public class EmberEmitterBlock extends EmbersEntityBlock implements SimpleWaterl
 		return facingConnected(direction, state, BlockStateProperties.HORIZONTAL_FACING)
 				&& facingConnected(direction, state, BlockStateProperties.FACING)
 				&& facingConnected(direction, state, BlockStateProperties.FACING_HOPPER);
+	}
+
+	private static boolean connectsToFaceAttached(Direction direction, BlockState state) {
+		if (!state.hasProperty(BlockStateProperties.ATTACH_FACE)) {
+			return false;
+		}
+		AttachFace face = state.getValue(BlockStateProperties.ATTACH_FACE);
+		if (face == AttachFace.CEILING) {
+			return direction == Direction.DOWN;
+		}
+		if (face == AttachFace.FLOOR) {
+			return direction == Direction.UP;
+		}
+		return facingConnected(direction, state, BlockStateProperties.HORIZONTAL_FACING)
+				&& facingConnected(direction, state, BlockStateProperties.FACING);
 	}
 
 	@Override

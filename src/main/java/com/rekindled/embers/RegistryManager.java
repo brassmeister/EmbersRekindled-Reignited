@@ -269,6 +269,8 @@ import com.rekindled.embers.recipe.MeltingRecipe;
 import com.rekindled.embers.recipe.MetalCoefficientRecipe;
 import com.rekindled.embers.recipe.MixingRecipe;
 import com.rekindled.embers.recipe.StampingRecipe;
+import com.rekindled.embers.research.capability.DefaultResearchCapability;
+import com.rekindled.embers.research.capability.IResearchCapability;
 import com.rekindled.embers.util.AshenAmuletLootModifier;
 import com.rekindled.embers.util.AshenArmorMaterial;
 import com.rekindled.embers.util.DynamicMetalSeeds;
@@ -283,6 +285,7 @@ import com.rekindled.embers.worldgen.CrystalSeedStructureProcessor;
 import com.rekindled.embers.worldgen.EntityMobilizerStructureProcessor;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.dispenser.BlockSource;
 import net.minecraft.core.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.core.dispenser.DispenseItemBehavior;
@@ -290,6 +293,7 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
@@ -341,6 +345,9 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.attachment.IAttachmentHolder;
+import net.neoforged.neoforge.attachment.IAttachmentSerializer;
 import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.common.SoundActions;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -374,10 +381,31 @@ public class RegistryManager {
 	public static final CompatDeferredRegister<MenuType<?>> MENU_TYPES = CompatDeferredRegister.create(BuiltInRegistries.MENU, Embers.MODID);
 	public static final CompatDeferredRegister<StructureType<?>> STRUCTURE_TYPES = CompatDeferredRegister.create(Registries.STRUCTURE_TYPE, Embers.MODID);
 	public static final CompatDeferredRegister<StructureProcessorType<?>> STRUCTURE_PROCESSOR_TYPES = CompatDeferredRegister.create(Registries.STRUCTURE_PROCESSOR, Embers.MODID);
+	public static final CompatDeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = CompatDeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, Embers.MODID);
 
 	public static Map<ResourceLocation, IAugment> augmentRegistry = new HashMap<ResourceLocation, IAugment>();
 
 	public static List<FluidStuff> fluidList = new ArrayList<FluidStuff>();
+
+	public static final CompatRegistryObject<AttachmentType<IResearchCapability>> RESEARCH_ATTACHMENT = ATTACHMENT_TYPES.register("research", () ->
+			AttachmentType.<IResearchCapability>builder(DefaultResearchCapability::new)
+					.serialize(new IAttachmentSerializer<CompoundTag, IResearchCapability>() {
+						@Override
+						public IResearchCapability read(IAttachmentHolder holder, CompoundTag tag, HolderLookup.Provider provider) {
+							IResearchCapability research = new DefaultResearchCapability();
+							research.readFromNBT(tag);
+							return research;
+						}
+
+						@Override
+						public CompoundTag write(IResearchCapability attachment, HolderLookup.Provider provider) {
+							CompoundTag tag = new CompoundTag();
+							attachment.writeToNBT(tag);
+							return tag;
+						}
+					})
+					.copyOnDeath()
+					.build());
 
 	public static FluidStuff addFluid(String localizedName, FluidInfo info, BiFunction<FluidType.Properties, FluidInfo, FluidType> type, BiFunction<FlowingFluid, BlockBehaviour.Properties, LiquidBlock> block, Function<ForgeFlowingFluid.Properties, ForgeFlowingFluid.Source> source, Function<ForgeFlowingFluid.Properties, ForgeFlowingFluid.Flowing> flowing, @Nullable Consumer<ForgeFlowingFluid.Properties> fluidProperties, FluidType.Properties prop) {
 		FluidStuff fluid = new FluidStuff(info.name, localizedName, info.color, type.apply(prop, info), block, fluidProperties, source, flowing);

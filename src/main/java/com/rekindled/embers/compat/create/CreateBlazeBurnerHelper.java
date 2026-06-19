@@ -43,11 +43,6 @@ public final class CreateBlazeBurnerHelper {
 		ArrayDeque<BlockPos> queue = new ArrayDeque<>();
 		Set<BlockPos> visited = new HashSet<>();
 		List<BlockPos> burners = new ArrayList<>();
-		boolean overflow = false;
-		int minX = origin.getX();
-		int maxX = origin.getX();
-		int minZ = origin.getZ();
-		int maxZ = origin.getZ();
 
 		queue.add(origin);
 		while (!queue.isEmpty()) {
@@ -67,10 +62,6 @@ public final class CreateBlazeBurnerHelper {
 			}
 
 			burners.add(current.immutable());
-			minX = Math.min(minX, current.getX());
-			maxX = Math.max(maxX, current.getX());
-			minZ = Math.min(minZ, current.getZ());
-			maxZ = Math.max(maxZ, current.getZ());
 
 			for (Direction direction : HORIZONTAL_DIRECTIONS) {
 				BlockPos next = current.relative(direction);
@@ -79,35 +70,56 @@ public final class CreateBlazeBurnerHelper {
 				}
 				if (Math.abs(next.getX() - origin.getX()) > MAX_GROUP_RADIUS
 						|| Math.abs(next.getZ() - origin.getZ()) > MAX_GROUP_RADIUS) {
-					if (level.getBlockEntity(next) instanceof EmberFueledBlazeBurner) {
-						overflow = true;
-					}
 					continue;
 				}
 				queue.add(next);
 			}
 		}
 
-		if (overflow
-				|| burners.size() > MAX_GROUP_SIZE
-				|| maxX - minX + 1 > MAX_GROUP_SPAN
-				|| maxZ - minZ + 1 > MAX_GROUP_SPAN) {
-			return List.of(originBurner);
+		List<BlockPos> selectedBurners = selectBurnerWindow(origin, burners);
+		if (selectedBurners.isEmpty()) {
+			selectedBurners = new ArrayList<>(List.of(origin.immutable()));
 		}
 
-		burners.sort(Comparator
+		selectedBurners.sort(Comparator
 				.comparingInt((BlockPos pos) -> Math.abs(pos.getX() - origin.getX()) + Math.abs(pos.getZ() - origin.getZ()))
 				.thenComparingInt(BlockPos::getX)
 				.thenComparingInt(BlockPos::getZ));
 
-		List<EmberFueledBlazeBurner> connectedBurners = new ArrayList<>(burners.size());
-		for (BlockPos burnerPos : burners) {
+		List<EmberFueledBlazeBurner> connectedBurners = new ArrayList<>(selectedBurners.size());
+		for (BlockPos burnerPos : selectedBurners) {
 			BlockEntity blockEntity = level.getBlockEntity(burnerPos);
 			if (blockEntity instanceof EmberFueledBlazeBurner burner) {
 				connectedBurners.add(burner);
 			}
 		}
 		return connectedBurners;
+	}
+
+	private static List<BlockPos> selectBurnerWindow(BlockPos origin, List<BlockPos> burners) {
+		List<BlockPos> best = List.of();
+		int bestDistance = Integer.MAX_VALUE;
+		for (int minX = origin.getX() - MAX_GROUP_SPAN + 1; minX <= origin.getX(); minX++) {
+			for (int minZ = origin.getZ() - MAX_GROUP_SPAN + 1; minZ <= origin.getZ(); minZ++) {
+				List<BlockPos> candidate = new ArrayList<>();
+				int distance = 0;
+				for (BlockPos burner : burners) {
+					if (burner.getX() >= minX && burner.getX() < minX + MAX_GROUP_SPAN
+							&& burner.getZ() >= minZ && burner.getZ() < minZ + MAX_GROUP_SPAN) {
+						candidate.add(burner);
+						distance += Math.abs(burner.getX() - origin.getX()) + Math.abs(burner.getZ() - origin.getZ());
+					}
+				}
+				if (candidate.size() > MAX_GROUP_SIZE) {
+					continue;
+				}
+				if (candidate.size() > best.size() || candidate.size() == best.size() && distance < bestDistance) {
+					best = candidate;
+					bestDistance = distance;
+				}
+			}
+		}
+		return best;
 	}
 
 	public static boolean isHeatedByHearthCoil(Level level, BlockPos burnerPos) {

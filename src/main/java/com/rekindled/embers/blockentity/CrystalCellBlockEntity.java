@@ -110,6 +110,8 @@ public class CrystalCellBlockEntity extends BlockEntity implements ISoundControl
 		if (nbt.contains("inventory"))
 			inventory.deserializeNBT(registries, nbt.getCompound("inventory"));
 		capability.deserializeNBT(nbt);
+		renderCapacity = capability.getEmberCapacity();
+		renderCapacityLast = renderCapacity;
 	}
 
 	@Override
