@@ -13,7 +13,6 @@ import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.EmbersAPI;
 import com.rekindled.embers.api.IEmbersAPI;
 import com.rekindled.embers.api.augment.AugmentUtil;
-import com.rekindled.embers.api.capabilities.EmbersCapabilities;
 import com.rekindled.embers.api.misc.HammerTarget;
 import com.rekindled.embers.api.upgrades.UpgradeUtil;
 import com.rekindled.embers.augment.ShiftingScalesAugment.IScalesCapability;
@@ -163,22 +162,16 @@ public class EmbersAPIImpl implements IEmbersAPI {
 
 	@Override
 	public double getScales(LivingEntity entity) {
-		IScalesCapability cap = com.rekindled.embers.util.CapabilityCompat.getCapability(entity, EmbersCapabilities.SCALES_CAPABILITY).orElse(null);
-		if (cap != null) {
-			return cap.getScales();
-		}
-		return 0;
+		return entity.getData(RegistryManager.SCALES_ATTACHMENT.get()).getScales();
 	}
 
 	@Override
 	public void setScales(LivingEntity entity, double scales) {
-		IScalesCapability cap = com.rekindled.embers.util.CapabilityCompat.getCapability(entity, EmbersCapabilities.SCALES_CAPABILITY).orElse(null);
-		if (cap != null) {
-			if (entity instanceof ServerPlayer player && cap.getScales() != scales) {
-				PacketHandler.sendToPlayer(player, new MessageScalesData(scales));
-			}
-			cap.setScales(scales);
+		IScalesCapability attachment = entity.getData(RegistryManager.SCALES_ATTACHMENT.get());
+		if (entity instanceof ServerPlayer player && attachment.getScales() != scales) {
+			PacketHandler.sendToPlayer(player, new MessageScalesData(scales));
 		}
+		attachment.setScales(scales);
 	}
 
 	@Override

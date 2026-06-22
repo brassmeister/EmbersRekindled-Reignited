@@ -1,5 +1,7 @@
 package com.rekindled.embers.api.item;
 
+import java.util.Objects;
+
 import javax.annotation.Nullable;
 
 import net.minecraft.world.damagesource.DamageSource;
@@ -11,6 +13,10 @@ public interface IInflictorGem {
 
 	@Nullable
 	String getAttunedSource(ItemStack stack);
+
+	default boolean matchesSource(ItemStack stack, DamageSource source) {
+		return Objects.equals(getAttunedSource(stack), source.type().msgId());
+	}
 
 	float getDamageResistance(ItemStack stack, float modifier);
 }

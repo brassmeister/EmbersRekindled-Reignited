@@ -13,6 +13,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.crafting.RecipeInput;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -39,11 +41,30 @@ public class AnvilAugmentRecipe implements IDawnstoneAnvilRecipe, IVisuallySplit
 
 	@Override
 	public boolean matches(RecipeInput context, Level pLevel) {
+		ItemStack toolStack = context.getItem(0);
+		boolean matchesTool = tool.test(toolStack) || isCompatibleArmor(toolStack);
 		if (augment.countTowardsTotalLevel()) {
-			ItemStack toolStack = context.getItem(0);
-			return tool.test(toolStack) && input.test(context.getItem(1)) && AugmentUtil.getLevel(toolStack) > AugmentUtil.getTotalAugmentLevel(toolStack);
+			return matchesTool && input.test(context.getItem(1)) && AugmentUtil.getLevel(toolStack) > AugmentUtil.getTotalAugmentLevel(toolStack);
 		} else 
-			return tool.test(context.getItem(0)) && input.test(context.getItem(1));
+			return matchesTool && input.test(context.getItem(1));
+	}
+
+	private boolean isCompatibleArmor(ItemStack stack) {
+		EquipmentSlot slot = stack.getEquipmentSlot();
+		if (slot == null) {
+			Equipable equipable = Equipable.get(stack);
+			slot = equipable == null ? null : equipable.getEquipmentSlot();
+		}
+		if (slot == null || !slot.isArmor()) {
+			return false;
+		}
+		return switch (augment.getName().toString()) {
+			case "embers:core", "embers:cinder_jet", "embers:blasting_core", "embers:flame_barrier",
+					"embers:eldritch_insignia", "embers:intelligent_apparatus", "embers:shifting_scales" -> true;
+			case "embers:tinker_lens", "embers:smoky_tinker_lens" -> slot == EquipmentSlot.HEAD;
+			case "embers:winding_gears" -> slot == EquipmentSlot.FEET;
+			default -> false;
+		};
 	}
 
 	@Override

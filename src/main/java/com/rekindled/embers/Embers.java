@@ -126,6 +126,7 @@ public class Embers {
 		ResearchManager.initResearches();
 		NeoForge.EVENT_BUS.addListener(EmbersEvents::onJoin);
 		NeoForge.EVENT_BUS.addListener(EventPriority.LOW, EmbersEvents::onEntityDamaged);
+		NeoForge.EVENT_BUS.addListener(EmbersEvents::onDamageApplied);
 		NeoForge.EVENT_BUS.addListener(EmbersEvents::onBlockBreak);
 		NeoForge.EVENT_BUS.addListener(EventPriority.LOW, EmbersEvents::onProjectileFired);
 		NeoForge.EVENT_BUS.addListener(EventPriority.LOW, EmbersEvents::onArrowLoose);

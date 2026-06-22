@@ -33,6 +33,7 @@ public class EmberPacketEntity extends Entity {
 	public BlockPos dest = new BlockPos(0,0,0);
 	public BlockPos trackedTarget = null;
 	public UUID trackedTargetSubLevelId = null;
+	public UUID lastReceiverSubLevelId = null;
 	public double value = 0;
 	public static final EntityDataAccessor<Integer> lifetime = SynchedEntityData.defineId(EmberPacketEntity.class, EntityDataSerializers.INT);
 
@@ -68,6 +69,16 @@ public class EmberPacketEntity extends Entity {
 		trackedTargetSubLevelId = subLevelId;
 	}
 
+	public boolean wasLastReceivedBy(BlockEntity blockEntity) {
+		return pos.equals(blockEntity.getBlockPos())
+				&& java.util.Objects.equals(lastReceiverSubLevelId, SubLevelCompat.getContainingSubLevelId(blockEntity));
+	}
+
+	public void setLastReceiver(BlockEntity blockEntity) {
+		pos = blockEntity.getBlockPos().immutable();
+		lastReceiverSubLevelId = SubLevelCompat.getContainingSubLevelId(blockEntity);
+	}
+
 	@Override
 	protected void defineSynchedData(SynchedEntityData.Builder builder) {
 		builder.define(lifetime, 80);
@@ -78,6 +89,9 @@ public class EmberPacketEntity extends Entity {
 		if (nbt.contains("destX")){
 			dest = new BlockPos(nbt.getInt("destX"), nbt.getInt("destY"), nbt.getInt("destZ"));
 		}
+		if (nbt.contains("sourceX")) {
+			pos = new BlockPos(nbt.getInt("sourceX"), nbt.getInt("sourceY"), nbt.getInt("sourceZ"));
+		}
 		if (nbt.contains("targetX")) {
 			trackedTarget = new BlockPos(nbt.getInt("targetX"), nbt.getInt("targetY"), nbt.getInt("targetZ"));
 		}
@@ -86,6 +100,13 @@ public class EmberPacketEntity extends Entity {
 				trackedTargetSubLevelId = UUID.fromString(nbt.getString("targetSubLevel"));
 			} catch (IllegalArgumentException ignored) {
 				trackedTargetSubLevelId = null;
+			}
+		}
+		if (nbt.contains("lastReceiverSubLevel")) {
+			try {
+				lastReceiverSubLevelId = UUID.fromString(nbt.getString("lastReceiverSubLevel"));
+			} catch (IllegalArgumentException ignored) {
+				lastReceiverSubLevelId = null;
 			}
 		}
 		value = nbt.getDouble("value");
@@ -99,6 +120,11 @@ public class EmberPacketEntity extends Entity {
 			nbt.putInt("destY", dest.getY());
 			nbt.putInt("destZ", dest.getZ());
 		}
+		if (pos != null) {
+			nbt.putInt("sourceX", pos.getX());
+			nbt.putInt("sourceY", pos.getY());
+			nbt.putInt("sourceZ", pos.getZ());
+		}
 		if (trackedTarget != null) {
 			nbt.putInt("targetX", trackedTarget.getX());
 			nbt.putInt("targetY", trackedTarget.getY());
@@ -106,6 +132,9 @@ public class EmberPacketEntity extends Entity {
 		}
 		if (trackedTargetSubLevelId != null) {
 			nbt.putString("targetSubLevel", trackedTargetSubLevelId.toString());
+		}
+		if (lastReceiverSubLevelId != null) {
+			nbt.putString("lastReceiverSubLevel", lastReceiverSubLevelId.toString());
 		}
 		nbt.putDouble("value", value);
 		nbt.putInt("lifetime", getEntityData().get(lifetime));
@@ -123,21 +152,7 @@ public class EmberPacketEntity extends Entity {
 			Vec3 oldPosition = new Vec3(getX(), getY(), getZ());
 			Vec3 currentTarget = getCurrentTargetPosition();
 			if (currentTarget != null) {
-				Vec3 targetVector = currentTarget.subtract(position());
-				double length = targetVector.length();
-				if (length > 1.0E-6D) {
-					targetVector = targetVector.scale(0.3 / length);
-				} else {
-					targetVector = Vec3.ZERO;
-				}
-				double weight = 0;
-				if (length <= 3) {
-					weight = 0.9 * ((3.0 - length) / 3.0);
-				}
-				setDeltaMovement(
-						(0.9 - weight) * getDeltaMovement().x + (0.1 + weight) * targetVector.x,
-						(0.9 - weight) * getDeltaMovement().y + (0.1 + weight) * targetVector.y,
-						(0.9 - weight) * getDeltaMovement().z + (0.1 + weight) * targetVector.z);
+				setDeltaMovement(calculateNextMovement(position(), currentTarget, getDeltaMovement()));
 			}
 			move(MoverType.SELF, getDeltaMovement());
 
@@ -169,6 +184,33 @@ public class EmberPacketEntity extends Entity {
 				}
 			}
 		}
+	}
+
+	public static Vec3 calculateNextMovement(Vec3 position, Vec3 target, Vec3 currentMovement) {
+		Vec3 offset = target.subtract(position);
+		double distance = offset.length();
+		if (!Double.isFinite(distance) || distance <= 1.0E-6D) {
+			return Vec3.ZERO;
+		}
+		if (distance <= 0.5D) {
+			return offset;
+		}
+
+		Vec3 targetDirection = offset.scale(1.0D / distance);
+		if (currentMovement == null || currentMovement.lengthSqr() <= 1.0E-8D) {
+			return targetDirection.scale(0.5D);
+		}
+
+		Vec3 currentDirection = currentMovement.normalize();
+		double alignment = currentDirection.dot(targetDirection);
+		double proximityTurn = Math.max(0.0D, (4.0D - distance) / 4.0D) * 0.45D;
+		double reverseTurn = Math.max(0.0D, -alignment) * 0.45D;
+		double turnWeight = Math.min(0.9D, 0.18D + proximityTurn + reverseTurn);
+		Vec3 direction = currentDirection.scale(1.0D - turnWeight).add(targetDirection.scale(turnWeight));
+		if (direction.lengthSqr() <= 1.0E-8D) {
+			direction = targetDirection;
+		}
+		return direction.normalize().scale(Math.min(0.5D, distance));
 	}
 
 	private Vec3 getCurrentTargetPosition() {

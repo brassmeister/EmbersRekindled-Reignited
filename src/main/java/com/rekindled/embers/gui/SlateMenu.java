@@ -45,11 +45,11 @@ public class SlateMenu extends AbstractContainerMenu {
 		this.slate = slate;
 		inventory = new ItemStackHandler(slotCount) {
 			public void onContentsChanged(int slot) {
-				ItemData.getOrCreateTag(SlateMenu.this.slate).put("inventory", this.serializeNBT(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY)));
+				ItemData.updateTag(SlateMenu.this.slate, tag -> tag.put("inventory", this.serializeNBT(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY))));
 			}
 		};
-		CompoundTag nbt = com.rekindled.embers.util.ItemData.getOrCreateTagElement(slate, "inventory");
-		if (!nbt.isEmpty())
+		CompoundTag nbt = ItemData.getTagElement(slate, "inventory");
+		if (nbt != null && !nbt.isEmpty())
 			inventory.deserializeNBT(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY), nbt);
 
 		//slate inventory
@@ -84,6 +84,9 @@ public class SlateMenu extends AbstractContainerMenu {
 
 	@Override
 	public ItemStack quickMoveStack(Player player, int index) {
+		if (index < 0 || index >= this.slots.size()) {
+			return ItemStack.EMPTY;
+		}
 		ItemStack itemstack = ItemStack.EMPTY;
 		Slot slot = this.slots.get(index);
 		if (slot != null && slot.hasItem()) {

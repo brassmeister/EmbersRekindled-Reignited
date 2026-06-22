@@ -136,19 +136,22 @@ public class EmberRelayBlockEntity extends BlockEntity implements IEmberPacketPr
 
 	@Override
 	public boolean onReceive(EmberPacketEntity packet) {
+		if (packet.wasLastReceivedBy(this)) {
+			return false;
+		}
 		refreshTrackedTarget();
 		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);
-		if (targetTile instanceof IEmberPacketReceiver targetBE && targetBE.hasRoomFor(packet.value) && !getBlockPos().equals(packet.pos)) {
+		if (targetTile instanceof IEmberPacketReceiver targetBE && targetBE.hasRoomFor(packet.value)) {
 			if (level instanceof ServerLevel serverLevel) {
 				SubLevelParticleUtil.send(this, new StarParticleOptions(EmbersColors.EMBER_ID, 3.5f + 0.5f * random.nextFloat()), getBlockPos().getX() + 0.5, getBlockPos().getY() + 0.5, getBlockPos().getZ() + 0.5, 12, 0.0125f * (random.nextFloat() - 0.5f), 0.0125f * (random.nextFloat() - 0.5f), 0.0125f * (random.nextFloat() - 0.5f), 0.0);
 			}
 			packet.setLifetime(78);
 			Vec3 destination = SubLevelCompat.currentTrackedPhysicalPosition(this, target, targetSubLevelId, targetPhysicalPosition);
 			packet.dest = BlockPos.containing(destination);
-			packet.pos = getBlockPos().immutable();
+			packet.setLastReceiver(this);
 			packet.setTrackedTarget(target, targetSubLevelId);
 			setIncomingDirection(packet.getDeltaMovement());
-			packet.setDeltaMovement(SubLevelCompat.toPhysicalDirection(this, SubLevelCompat.toLocalDirection(this, packet.getDeltaMovement()).scale(1.7)));
+			packet.setDeltaMovement(SubLevelCompat.toPhysicalDirection(this, incomingDirection));
 			level.playLocalSound(packet.getX(), packet.getY(), packet.getZ(), EmbersSounds.EMBER_RELAY.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
 			return false;
 		}
@@ -157,7 +160,7 @@ public class EmberRelayBlockEntity extends BlockEntity implements IEmberPacketPr
 
 	@Override
 	public void setIncomingDirection(Vec3 direction) {
-		incomingDirection = direction.scale(1.7);
+		incomingDirection = SubLevelCompat.toLocalDirection(this, direction).scale(1.7D);
 		this.setChanged();
 	}
 

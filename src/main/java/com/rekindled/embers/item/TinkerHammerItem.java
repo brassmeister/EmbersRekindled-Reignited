@@ -80,25 +80,13 @@ public class TinkerHammerItem extends Item {
 					Vec3 hitPos = receiverPhysical.subtract(producerPhysical);
 					motion = SubLevelCompat.toPhysicalDirection(targetTile, motion);
 					Vec3 oldPos = Vec3.ZERO;
-					Vec3 newPos = oldPos.add(motion);
 
 					for (int i = 0; i <= 80; ++i) {
-						Vec3 targetVector = hitPos.subtract(newPos);
-						double length = targetVector.length();
-						targetVector = targetVector.scale(0.3 / length);
-						double weight = 0;
-						if (length <= 3) {
-							weight = 0.9 * ((3.0 - length) / 3.0);
-							if (length <= 0.2) {
-								break;
-							}
+						if (oldPos.distanceToSqr(hitPos) <= 0.04D) {
+							break;
 						}
-						motion = new Vec3(
-								(0.9 - weight) * motion.x + (0.1 + weight) * targetVector.x,
-								(0.9 - weight) * motion.y + (0.1 + weight) * targetVector.y,
-								(0.9 - weight) * motion.z + (0.1 + weight) * targetVector.z);
-						newPos = oldPos.add(motion);
-						oldPos = newPos;
+						motion = com.rekindled.embers.entity.EmberPacketEntity.calculateNextMovement(oldPos, hitPos, motion);
+						oldPos = oldPos.add(motion);
 					}
 					((IEmberPacketReceiver) tile).setIncomingDirection(motion);
 					world.playLocalSound(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.5f, 1.5f + world.random.nextFloat() * 0.1f, false);

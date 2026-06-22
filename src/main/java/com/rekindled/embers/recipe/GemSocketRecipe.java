@@ -37,27 +37,32 @@ public class GemSocketRecipe implements CraftingRecipe {
 		int cloaks = 0;
 		int strings = 0;
 		int gems = 0;
-		for (int i = 0; i < container.size(); i ++) {
+		for (int i = 0; i < container.size(); i++) {
 			ItemStack stack = container.getItem(i);
-			if (stack.getItem() instanceof IInflictorGemHolder && ((IInflictorGemHolder) stack.getItem()).getAttachedGemCount(stack) == 0) {
+			if (!stack.isEmpty() && stack.getItem() instanceof IInflictorGemHolder) {
 				cloak = stack;
+				cloaks++;
 			}
 		}
-		for (int i = 0; i < container.size(); i ++) {
+		if (cloak.isEmpty() || cloaks != 1) {
+			return false;
+		}
+
+		IInflictorGemHolder holder = (IInflictorGemHolder) cloak.getItem();
+		for (int i = 0; i < container.size(); i++) {
 			ItemStack stack = container.getItem(i);
 			if (!stack.isEmpty()) {
 				if (stack.getItem() instanceof IInflictorGemHolder) {
-					cloaks++;
 				} else if (ingredient.test(stack)) {
 					strings++;
-				} else if (!cloak.isEmpty() && ((IInflictorGemHolder) cloak.getItem()).canAttachGem(cloak,stack)) {
+				} else if (holder.canAttachGem(cloak, stack)) {
 					gems++;
 				} else {
 					return false;
 				}
 			}
 		}
-		return !cloak.isEmpty() && cloaks == 1 && strings == 1 && gems > 0 && gems <= ((IInflictorGemHolder)cloak.getItem()).getGemSlots(cloak);
+		return strings == 1 && gems > 0 && holder.getAttachedGemCount(cloak) + gems <= holder.getGemSlots(cloak);
 	}
 
 	@Override
@@ -69,12 +74,20 @@ public class GemSocketRecipe implements CraftingRecipe {
 			}
 		}
 		if (!capeStack.isEmpty()) {
-			int counter = 0;
+			IInflictorGemHolder holder = (IInflictorGemHolder) capeStack.getItem();
+			ItemStack[] attached = holder.getAttachedGems(capeStack);
+			int slot = 0;
 			for (int i = 0; i < container.size(); i ++) {
 				ItemStack stack = container.getItem(i);
 				if (!stack.isEmpty() && stack.getItem() instanceof IInflictorGem) {
-					((IInflictorGemHolder)capeStack.getItem()).attachGem(capeStack, stack, counter);
-					counter++;
+					while (slot < attached.length && !attached[slot].isEmpty()) {
+						slot++;
+					}
+					if (slot >= attached.length) {
+						return ItemStack.EMPTY;
+					}
+					holder.attachGem(capeStack, stack, slot);
+					attached[slot] = stack;
 				}
 			}
 			return capeStack;

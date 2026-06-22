@@ -42,14 +42,15 @@ public class AshenArmorGemItem extends AshenArmorItem implements IInflictorGemHo
 
 	@Override
 	public void attachGem(ItemStack holder, ItemStack gem, int slot) {
-		ItemData.getOrCreateTag(holder).put("gem" + slot, ItemData.save(gem));
+		ItemData.updateTag(holder, tag -> tag.put("gem" + slot, ItemData.save(gem)));
 	}
 
 	@Override
 	public ItemStack detachGem(ItemStack holder, int slot) {
-		if (ItemData.getOrCreateTag(holder).contains("gem" + slot)) {
-			ItemStack gem = ItemData.parse(ItemData.getOrCreateTag(holder).getCompound("gem" + slot));
-			ItemData.getOrCreateTag(holder).remove("gem" + slot);
+		CompoundTag tag = ItemData.getTag(holder);
+		if (tag != null && tag.contains("gem" + slot)) {
+			ItemStack gem = ItemData.parse(tag.getCompound("gem" + slot));
+			ItemData.updateTag(holder, updated -> updated.remove("gem" + slot));
 			return gem;
 		}
 		return ItemStack.EMPTY;
@@ -57,22 +58,22 @@ public class AshenArmorGemItem extends AshenArmorItem implements IInflictorGemHo
 
 	@Override
 	public void clearGems(ItemStack holder) {
-		CompoundTag tagCompound = ItemData.getOrCreateTag(holder);
-		if(tagCompound == null)
-			return;
-		for (int i = 0; i < getGemSlots(holder); i++) {
-			if (tagCompound.contains("gem" + i)) {
-				tagCompound.remove("gem" + i);
+		ItemData.updateTag(holder, tag -> {
+			for (int i = 0; i < getGemSlots(holder); i++) {
+				if (tag.contains("gem" + i)) {
+					tag.remove("gem" + i);
+				}
 			}
-		}
+		});
 	}
 
 	@Override
 	public ItemStack[] getAttachedGems(ItemStack holder) {
 		ItemStack[] stacks = new ItemStack[getGemSlots(holder)];
+		CompoundTag tag = ItemData.getTag(holder);
 		for (int i = 0; i < stacks.length; i++) {
-			if(ItemData.getOrCreateTag(holder).contains("gem" + i))
-				stacks[i] = ItemData.parse(ItemData.getOrCreateTag(holder).getCompound("gem" + i));
+			if(tag != null && tag.contains("gem" + i))
+				stacks[i] = ItemData.parse(tag.getCompound("gem" + i));
 			else
 				stacks[i] = ItemStack.EMPTY;
 		}
@@ -86,7 +87,7 @@ public class AshenArmorGemItem extends AshenArmorItem implements IInflictorGemHo
 		if (!isBroken(holder)) {
 			for (ItemStack stack : getAttachedGems(holder)) {
 				Item item = stack.getItem();
-				if (item instanceof IInflictorGem gem && gem.getAttunedSource(stack).equals(source.type().msgId())) {
+				if (item instanceof IInflictorGem gem && gem.matchesSource(stack, source)) {
 					reduction += gem.getDamageResistance(stack, reduction);
 				}
 			}
@@ -110,8 +111,8 @@ public class AshenArmorGemItem extends AshenArmorItem implements IInflictorGemHo
 
 		for (ItemStack stacks : attached) {
 			if (!stacks.isEmpty()) {
-				if (ItemData.getOrCreateTag(stacks).contains("type")) {
-					tooltip.add(Component.translatable(Embers.MODID + ".tooltip.inflictor", ItemData.getOrCreateTag(stacks).getString("type")).withStyle(ChatFormatting.GRAY));
+				if (ItemData.getTag(stacks) != null && ItemData.getTag(stacks).contains("type")) {
+					tooltip.add(Component.translatable(Embers.MODID + ".tooltip.inflictor", ItemData.getTag(stacks).getString("type")).withStyle(ChatFormatting.GRAY));
 				} else {
 					tooltip.add(Component.translatable(Embers.MODID + ".tooltip.inflictor.none").withStyle(ChatFormatting.GRAY));
 				}

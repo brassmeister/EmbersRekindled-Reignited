@@ -28,6 +28,8 @@ import com.rekindled.embers.augment.FocalLensAugment;
 import com.rekindled.embers.augment.IntelligentApparatusAugment;
 import com.rekindled.embers.augment.ResonatingBellAugment;
 import com.rekindled.embers.augment.ShiftingScalesAugment;
+import com.rekindled.embers.augment.ShiftingScalesAugment.DefaultScalesCapability;
+import com.rekindled.embers.augment.ShiftingScalesAugment.IScalesCapability;
 import com.rekindled.embers.augment.SuperheaterAugment;
 import com.rekindled.embers.augment.TinkerLensAugment;
 import com.rekindled.embers.augment.WindingGearsAugment;
@@ -405,6 +407,25 @@ public class RegistryManager {
 						}
 					})
 					.copyOnDeath()
+					.build());
+
+	public static final CompatRegistryObject<AttachmentType<IScalesCapability>> SCALES_ATTACHMENT = ATTACHMENT_TYPES.register("scales", () ->
+			AttachmentType.<IScalesCapability>builder(DefaultScalesCapability::new)
+					.serialize(new IAttachmentSerializer<CompoundTag, IScalesCapability>() {
+						@Override
+						public IScalesCapability read(IAttachmentHolder holder, CompoundTag tag, HolderLookup.Provider provider) {
+							IScalesCapability scales = new DefaultScalesCapability();
+							scales.readFromNBT(tag);
+							return scales;
+						}
+
+						@Override
+						public CompoundTag write(IScalesCapability attachment, HolderLookup.Provider provider) {
+							CompoundTag tag = new CompoundTag();
+							attachment.writeToNBT(tag);
+							return tag;
+						}
+					})
 					.build());
 
 	public static FluidStuff addFluid(String localizedName, FluidInfo info, BiFunction<FluidType.Properties, FluidInfo, FluidType> type, BiFunction<FlowingFluid, BlockBehaviour.Properties, LiquidBlock> block, Function<ForgeFlowingFluid.Properties, ForgeFlowingFluid.Source> source, Function<ForgeFlowingFluid.Properties, ForgeFlowingFluid.Flowing> flowing, @Nullable Consumer<ForgeFlowingFluid.Properties> fluidProperties, FluidType.Properties prop) {

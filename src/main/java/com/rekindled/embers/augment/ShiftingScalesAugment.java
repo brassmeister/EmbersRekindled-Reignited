@@ -92,17 +92,14 @@ public class ShiftingScalesAugment extends AugmentBase {
 
 	public static void sendScalesData(ServerPlayer player) {
 		double scales = EmbersAPI.getScales(player);
-		if (scales > 0) {
-			PacketHandler.sendToPlayer(player, new MessageScalesData(scales));
-		}
+		PacketHandler.sendToPlayer(player, new MessageScalesData(scales));
 	}
 
 	@SubscribeEvent
-	public void onServerTick(ServerTickEvent.Pre event) { {
-			for (UUID uuid : cooldownTicksServer.keySet()) {
-				int ticks = cooldownTicksServer.get(uuid) - 1;
-				cooldownTicksServer.put(uuid, ticks);
-			}
+	public void onServerTick(ServerTickEvent.Pre event) {
+		for (UUID uuid : cooldownTicksServer.keySet()) {
+			int ticks = cooldownTicksServer.get(uuid) - 1;
+			cooldownTicksServer.put(uuid, ticks);
 		}
 	}
 
@@ -211,7 +208,7 @@ public class ShiftingScalesAugment extends AugmentBase {
 	}
 
 	public static class DefaultScalesCapability implements IScalesCapability {
-		public double scales = -1;
+		public double scales = 0;
 
 		@Override
 		public double getScales() {

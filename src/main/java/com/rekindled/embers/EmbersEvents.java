@@ -57,6 +57,7 @@ import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.ArrowLooseEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
@@ -82,13 +83,9 @@ public class EmbersEvents {
 			}
 		}
 
-		attuneInflictorGem(event.getEntity(), event.getSource(), event.getEntity().getMainHandItem());
-		attuneInflictorGem(event.getEntity(), event.getSource(), event.getEntity().getOffhandItem());
-
 		float mult = 1.0f;
 		for (ItemStack armor : event.getEntity().getArmorSlots()) {
 			mult -= getInflictorGemResistance(event, armor);
-			addHeat(event.getEntity(), armor, 5.0f);
 		}
 		if (mult <= 0) {
 			event.setCanceled(true);
@@ -104,6 +101,19 @@ public class EmbersEvents {
 				tyrfing.attack(event, event.getEntity().getAttribute(Attributes.ARMOR).getValue());
 			}
 			addHeat(source, heldStack, Math.max(1.0f, 0.5f * event.getAmount()));
+		}
+	}
+
+	public static void onDamageApplied(LivingDamageEvent.Post event) {
+		if (event.getNewDamage() <= 0.0f) {
+			return;
+		}
+
+		LivingEntity entity = event.getEntity();
+		attuneInflictorGem(entity, event.getSource(), entity.getMainHandItem());
+		attuneInflictorGem(entity, event.getSource(), entity.getOffhandItem());
+		for (ItemStack armor : entity.getArmorSlots()) {
+			addHeat(entity, armor, 5.0f);
 		}
 	}
 

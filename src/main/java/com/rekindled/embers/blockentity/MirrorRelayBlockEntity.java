@@ -134,19 +134,19 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 
 	@Override
 	public boolean onReceive(EmberPacketEntity packet) {
+		if (packet.wasLastReceivedBy(this)) {
+			return false;
+		}
 		refreshTrackedTarget();
 		BlockEntity targetTile = target == null ? null : SubLevelCompat.findReachableLinkedTarget(this, target, targetSubLevelId, targetPhysicalPosition);
-		if (targetTile instanceof IEmberPacketReceiver targetBE && targetBE.hasRoomFor(packet.value) && !getBlockPos().equals(packet.pos)) {
-			Axis axis = getBlockState().getValue(BlockStateProperties.FACING).getAxis();
+		if (targetTile instanceof IEmberPacketReceiver targetBE && targetBE.hasRoomFor(packet.value)) {
 			packet.setLifetime(78);
 			Vec3 destination = SubLevelCompat.currentTrackedPhysicalPosition(this, target, targetSubLevelId, targetPhysicalPosition);
 			packet.dest = BlockPos.containing(destination);
-			packet.pos = getBlockPos().immutable();
+			packet.setLastReceiver(this);
 			packet.setTrackedTarget(target, targetSubLevelId);
 			setIncomingDirection(packet.getDeltaMovement());
-			Vec3 localMovement = SubLevelCompat.toLocalDirection(this, packet.getDeltaMovement());
-			Vec3 reflectedMovement = localMovement.multiply(axis == Axis.X ? -1.7 : 1.7, axis == Axis.Y ? -1.7 : 1.7, axis == Axis.Z ? -1.7 : 1.7);
-			packet.setDeltaMovement(SubLevelCompat.toPhysicalDirection(this, reflectedMovement));
+			packet.setDeltaMovement(SubLevelCompat.toPhysicalDirection(this, incomingDirection));
 			level.playLocalSound(packet.getX(), packet.getY(), packet.getZ(), EmbersSounds.EMBER_RELAY.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
 			return false;
 		}
@@ -156,7 +156,8 @@ public class MirrorRelayBlockEntity extends BlockEntity implements IEmberPacketP
 	@Override
 	public void setIncomingDirection(Vec3 direction) {
 		Axis axis = getBlockState().getValue(BlockStateProperties.FACING).getAxis();
-		incomingDirection = direction.multiply(axis == Axis.X ? -1.7 : 1.7, axis == Axis.Y ? -1.7 : 1.7, axis == Axis.Z ? -1.7 : 1.7);
+		Vec3 localDirection = SubLevelCompat.toLocalDirection(this, direction);
+		incomingDirection = localDirection.multiply(axis == Axis.X ? -1.7 : 1.7, axis == Axis.Y ? -1.7 : 1.7, axis == Axis.Z ? -1.7 : 1.7);
 		this.setChanged();
 	}
 
