@@ -50,6 +50,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -100,10 +101,15 @@ public final class CreateCompat {
 		BLOCK_ENTITIES.register(modEventBus);
 		CREATIVE_TABS.register(modEventBus);
 		modEventBus.addListener(CreateCompat::commonSetup);
+		modEventBus.addListener(CreateCompat::registerCreateArmInteractionPointTypes);
 		modEventBus.addListener(CreateCompat::registerCapabilities);
 		if (FMLEnvironment.dist.isClient()) {
 			CreateCompatClient.init(modEventBus);
 		}
+	}
+
+	private static void registerCreateArmInteractionPointTypes(RegisterEvent event) {
+		DawnstoneAnvilArmInteractionPointType.register(event);
 	}
 
 	private static void commonSetup(FMLCommonSetupEvent event) {

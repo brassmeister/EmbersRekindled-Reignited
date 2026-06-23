@@ -9,6 +9,8 @@ import com.rekindled.embers.util.Misc;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -52,6 +54,9 @@ public class DawnstoneAnvilBlock extends EmbersEntityBlock implements SimpleWate
 		if (level.getBlockEntity(pos) instanceof DawnstoneAnvilBlockEntity anvilEntity) {
 			ItemStack heldItem = player.getItemInHand(hand);
 			if (!heldItem.isEmpty()) {
+				if (isCreateMechanicalArm(heldItem)) {
+					return InteractionResult.PASS;
+				}
 				if (Misc.isHoldingHammer(player, hand)) {
 					if (anvilEntity.onHit())
 						return InteractionResult.SUCCESS;
@@ -74,6 +79,13 @@ public class DawnstoneAnvilBlock extends EmbersEntityBlock implements SimpleWate
 			}
 		}
 		return InteractionResult.PASS;
+	}
+
+	private static boolean isCreateMechanicalArm(ItemStack stack) {
+		ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+		return itemId != null
+				&& "create".equals(itemId.getNamespace())
+				&& "mechanical_arm".equals(itemId.getPath());
 	}
 
 	@Override
