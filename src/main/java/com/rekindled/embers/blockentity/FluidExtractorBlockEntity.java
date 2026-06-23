@@ -1,5 +1,6 @@
 package com.rekindled.embers.blockentity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -11,6 +12,7 @@ import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
+import com.rekindled.embers.block.ExtractorBlockBase;
 import com.rekindled.embers.particle.VaporParticleOptions;
 import com.rekindled.embers.util.EmbersColors;
 import com.rekindled.embers.compat.sublevel.SubLevelCompat;
@@ -35,10 +37,19 @@ public class FluidExtractorBlockEntity extends FluidPipeBlockEntityBase implemen
 	Random random = new Random();
 	IFluidHandler[] sideHandlers;
 	boolean active;
-	public static final int MAX_DRAIN = 120;
+	private long sourceCacheEpoch = Long.MIN_VALUE;
+	private Direction[] sourceDirections = new Direction[0];
+	private IFluidHandler[] sourceHandlers = new IFluidHandler[0];
+	public static final int MAX_DRAIN = MAX_PUSH * ExtractorBlockBase.WORK_TICK_INTERVAL;
 
 	public FluidExtractorBlockEntity(BlockPos pPos, BlockState pBlockState) {
 		super(RegistryManager.FLUID_EXTRACTOR_ENTITY.get(), pPos, pBlockState);
+	}
+
+	@Override
+	public void onLoad() {
+		super.onLoad();
+		scheduleWork(1);
 	}
 
 	@Override
@@ -91,6 +102,10 @@ public class FluidExtractorBlockEntity extends FluidPipeBlockEntityBase implemen
 	}
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, FluidExtractorBlockEntity blockEntity) {
+		scheduledServerTick(level, pos, state, blockEntity);
+	}
+
+	public static int scheduledServerTick(Level level, BlockPos pos, BlockState state, FluidExtractorBlockEntity blockEntity) {
 		if (!blockEntity.loaded)
 			blockEntity.initConnections();
 		if (level instanceof ServerLevel && blockEntity.clogged && blockEntity.isAnySideUnclogged()) {
@@ -112,6 +127,7 @@ public class FluidExtractorBlockEntity extends FluidPipeBlockEntityBase implemen
 			moved |= blockEntity.extractAndRoute();
 		}
 		blockEntity.updateRouteState(moved);
+		return blockEntity.nextScheduleDelay(moved);
 	}
 
 	private boolean routeBufferedFluid() {
@@ -131,14 +147,14 @@ public class FluidExtractorBlockEntity extends FluidPipeBlockEntityBase implemen
 	}
 
 	private boolean extractAndRoute() {
-		for (Direction facing : Direction.values()) {
-			if (!PipeNetworkUtil.canUseAdjacentSide(this, facing, FluidPipeBlockEntityBase.class)) {
-				continue;
-			}
-			IFluidHandler handler = PipeNetworkUtil.getAdjacentFluidHandler(this, facing);
-			if (handler == null) {
-				continue;
-			}
+		refreshSourceCache();
+		if (sourceDirections.length == 0) {
+			return false;
+		}
+		for (int sourceIndex = 0; sourceIndex < sourceDirections.length; sourceIndex++) {
+			int cacheIndex = Math.floorMod(sourceIndex + lastRobin, sourceDirections.length);
+			Direction facing = sourceDirections[cacheIndex];
+			IFluidHandler handler = sourceHandlers[cacheIndex];
 			FluidStack extracted = handler.drain(MAX_DRAIN, FluidAction.SIMULATE);
 			if (extracted.isEmpty()) {
 				continue;
@@ -155,9 +171,54 @@ public class FluidExtractorBlockEntity extends FluidPipeBlockEntityBase implemen
 			if (moved < drained.getAmount()) {
 				tank.fill(drained.copyWithAmount(drained.getAmount() - moved), FluidAction.EXECUTE);
 			}
+			if (moved > 0) {
+				lastRobin = cacheIndex + 1;
+			}
 			return moved > 0;
 		}
 		return false;
+	}
+
+	private void refreshSourceCache() {
+		long epoch = PipeNetworkUtil.getCacheEpoch();
+		if (sourceCacheEpoch == epoch) {
+			return;
+		}
+		ArrayList<Direction> directions = new ArrayList<>();
+		ArrayList<IFluidHandler> handlers = new ArrayList<>();
+		for (Direction facing : Direction.values()) {
+			if (!PipeNetworkUtil.canUseAdjacentSide(this, facing, FluidPipeBlockEntityBase.class)) {
+				continue;
+			}
+			if (getConnection(facing) != PipeConnection.END) {
+				continue;
+			}
+			IFluidHandler handler = PipeNetworkUtil.getAdjacentFluidHandler(this, facing);
+			if (handler != null) {
+				directions.add(facing);
+				handlers.add(handler);
+			}
+		}
+		sourceDirections = directions.toArray(Direction[]::new);
+		sourceHandlers = handlers.toArray(IFluidHandler[]::new);
+		sourceCacheEpoch = PipeNetworkUtil.getCacheEpoch();
+	}
+
+	private int nextScheduleDelay(boolean moved) {
+		if (!shouldKeepScheduled()) {
+			return 0;
+		}
+		return moved ? ExtractorBlockBase.WORK_TICK_INTERVAL : ExtractorBlockBase.IDLE_TICK_INTERVAL;
+	}
+
+	private boolean shouldKeepScheduled() {
+		return active || !tank.isEmpty();
+	}
+
+	private void scheduleWork(int delay) {
+		if (level != null && !level.isClientSide) {
+			ExtractorBlockBase.scheduleExtractorTick(level, worldPosition, getBlockState().getBlock(), delay);
+		}
 	}
 
 	private void updateRouteState(boolean moved) {

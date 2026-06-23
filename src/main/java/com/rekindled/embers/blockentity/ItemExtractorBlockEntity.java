@@ -18,6 +18,7 @@ import com.rekindled.embers.api.tile.IExtraCapabilityInformation;
 import com.rekindled.embers.api.tile.IOrderDestination;
 import com.rekindled.embers.api.tile.IOrderSource;
 import com.rekindled.embers.api.tile.OrderStack;
+import com.rekindled.embers.block.ExtractorBlockBase;
 import com.rekindled.embers.particle.VaporParticleOptions;
 import com.rekindled.embers.util.EmbersColors;
 import com.rekindled.embers.compat.sublevel.SubLevelCompat;
@@ -47,9 +48,18 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 	IItemHandler[] sideHandlers;
 	boolean active;
 	List<OrderStack> orders = new ArrayList<>();
+	private long sourceCacheEpoch = Long.MIN_VALUE;
+	private Direction[] sourceDirections = new Direction[0];
+	private IItemHandler[] sourceHandlers = new IItemHandler[0];
 
 	public ItemExtractorBlockEntity(BlockPos pPos, BlockState pBlockState) {
 		super(RegistryManager.ITEM_EXTRACTOR_ENTITY.get(), pPos, pBlockState);
+	}
+
+	@Override
+	public void onLoad() {
+		super.onLoad();
+		scheduleWork(1);
 	}
 
 	@Override
@@ -121,6 +131,10 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 	public static IFilter FILTER_ANY = new FilterAny();
 
 	public static void serverTick(Level level, BlockPos pos, BlockState state, ItemExtractorBlockEntity blockEntity) {
+		scheduledServerTick(level, pos, state, blockEntity);
+	}
+
+	public static int scheduledServerTick(Level level, BlockPos pos, BlockState state, ItemExtractorBlockEntity blockEntity) {
 		if (!blockEntity.loaded)
 			blockEntity.initConnections();
 		if (level instanceof ServerLevel && blockEntity.clogged && blockEntity.isAnySideUnclogged()) {
@@ -157,6 +171,7 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 			moved |= blockEntity.extractAndRoute(filter, invDest, currentOrder);
 		}
 		blockEntity.updateRouteState(moved);
+		return blockEntity.nextScheduleDelay(moved);
 	}
 
 	private boolean routeBufferedItem() {
@@ -177,23 +192,29 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 	}
 
 	private boolean extractAndRoute(IFilter filter, IItemHandler invDest, OrderStack currentOrder) {
-		for (Direction facing : Direction.values()) {
-			if (!PipeNetworkUtil.canUseAdjacentSide(this, facing, ItemPipeBlockEntityBase.class)) {
-				continue;
-			}
-			IItemHandler handler = PipeNetworkUtil.getAdjacentItemHandler(this, facing);
-			if (handler == null) {
-				continue;
-			}
+		int amount = currentOrder == null ? getCapacity() : Math.min(getCapacity(), currentOrder.getSize());
+		if (amount <= 0) {
+			return false;
+		}
+		refreshSourceCache();
+		if (sourceDirections.length == 0) {
+			return false;
+		}
+		for (int sourceIndex = 0; sourceIndex < sourceDirections.length; sourceIndex++) {
+			int cacheIndex = Math.floorMod(sourceIndex + lastRobin, sourceDirections.length);
+			Direction facing = sourceDirections[cacheIndex];
+			IItemHandler handler = sourceHandlers[cacheIndex];
 			for (int slot = 0; slot < handler.getSlots(); slot++) {
-				ItemStack extracted = handler.extractItem(slot, 1, true);
+				ItemStack extracted = handler.extractItem(slot, amount, true);
 				if (extracted.isEmpty() || !filter.acceptsItem(extracted, invDest)) {
 					continue;
 				}
-				if (!PipeNetworkUtil.routeItem(this, facing, extracted, true).isEmpty()) {
+				ItemStack simulatedRemainder = PipeNetworkUtil.routeItem(this, facing, extracted, true);
+				int routable = extracted.getCount() - simulatedRemainder.getCount();
+				if (routable <= 0) {
 					continue;
 				}
-				ItemStack drained = handler.extractItem(slot, 1, false);
+				ItemStack drained = handler.extractItem(slot, routable, false);
 				if (drained.isEmpty()) {
 					continue;
 				}
@@ -206,11 +227,54 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 					if (currentOrder != null) {
 						currentOrder.deplete(moved);
 					}
+					lastRobin = cacheIndex + 1;
 					return true;
 				}
 			}
 		}
 		return false;
+	}
+
+	private void refreshSourceCache() {
+		long epoch = PipeNetworkUtil.getCacheEpoch();
+		if (sourceCacheEpoch == epoch) {
+			return;
+		}
+		ArrayList<Direction> directions = new ArrayList<>();
+		ArrayList<IItemHandler> handlers = new ArrayList<>();
+		for (Direction facing : Direction.values()) {
+			if (!PipeNetworkUtil.canUseAdjacentSide(this, facing, ItemPipeBlockEntityBase.class)) {
+				continue;
+			}
+			if (getConnection(facing) != PipeConnection.END) {
+				continue;
+			}
+			IItemHandler handler = PipeNetworkUtil.getAdjacentItemHandler(this, facing);
+			if (handler != null) {
+				directions.add(facing);
+				handlers.add(handler);
+			}
+		}
+		sourceDirections = directions.toArray(Direction[]::new);
+		sourceHandlers = handlers.toArray(IItemHandler[]::new);
+		sourceCacheEpoch = PipeNetworkUtil.getCacheEpoch();
+	}
+
+	private int nextScheduleDelay(boolean moved) {
+		if (!shouldKeepScheduled()) {
+			return 0;
+		}
+		return moved ? ExtractorBlockBase.WORK_TICK_INTERVAL : ExtractorBlockBase.IDLE_TICK_INTERVAL;
+	}
+
+	private boolean shouldKeepScheduled() {
+		return active || !inventory.getStackInSlot(0).isEmpty() || !orders.isEmpty();
+	}
+
+	private void scheduleWork(int delay) {
+		if (level != null && !level.isClientSide) {
+			ExtractorBlockBase.scheduleExtractorTick(level, worldPosition, getBlockState().getBlock(), delay);
+		}
 	}
 
 	private void updateRouteState(boolean moved) {
@@ -251,6 +315,7 @@ public class ItemExtractorBlockEntity extends ItemPipeBlockEntityBase implements
 		else {
 			order.reset(filter, orderSize);
 		}
+		scheduleWork(1);
 	}
 
 	@Override

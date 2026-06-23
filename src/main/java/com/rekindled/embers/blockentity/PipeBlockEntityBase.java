@@ -129,6 +129,7 @@ public class PipeBlockEntityBase extends BlockEntity {
 			}
 		}
 		syncConnections = true;
+		PipeNetworkUtil.invalidateCaches();
 		Misc.sendToTrackingPlayers(level, worldPosition, getUpdatePacket());
 		loaded = true;
 		setChanged();
@@ -164,6 +165,7 @@ public class PipeBlockEntityBase extends BlockEntity {
 		}
 		connections[index] = connection;
 		syncConnections = true;
+		PipeNetworkUtil.invalidateCaches();
 		refreshConnectionModel();
 		setChanged();
 	}
@@ -175,6 +177,7 @@ public class PipeBlockEntityBase extends BlockEntity {
 	public void setConnections(PipeConnection[] connections) {
 		this.connections = connections;
 		syncConnections = true;
+		PipeNetworkUtil.invalidateCaches();
 		refreshConnectionModel();
 		setChanged();
 	}
@@ -237,7 +240,14 @@ public class PipeBlockEntityBase extends BlockEntity {
 			if (nbt.contains("connection" + direction.get3DDataValue()))
 				connections[direction.get3DDataValue()] = PipeConnection.values()[nbt.getInt("connection" + direction.get3DDataValue())];
 		}
+		PipeNetworkUtil.invalidateCaches();
 		refreshConnectionModel();
+	}
+
+	@Override
+	public void setRemoved() {
+		super.setRemoved();
+		PipeNetworkUtil.invalidateCaches();
 	}
 
 	@Override

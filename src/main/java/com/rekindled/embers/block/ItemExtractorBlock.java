@@ -8,7 +8,9 @@ import com.rekindled.embers.util.Misc;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -34,7 +36,17 @@ public class ItemExtractorBlock extends ExtractorBlockBase {
 
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
-		return pLevel.isClientSide ? createTickerHelper(pBlockEntityType, RegistryManager.ITEM_EXTRACTOR_ENTITY.get(), ItemExtractorBlockEntity::clientTick) : createTickerHelper(pBlockEntityType, RegistryManager.ITEM_EXTRACTOR_ENTITY.get(), ItemExtractorBlockEntity::serverTick);
+		return pLevel.isClientSide ? createTickerHelper(pBlockEntityType, RegistryManager.ITEM_EXTRACTOR_ENTITY.get(), ItemExtractorBlockEntity::clientTick) : null;
+	}
+
+	@Override
+	protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+		if (level.getBlockEntity(pos) instanceof ItemExtractorBlockEntity extractor) {
+			int nextDelay = ItemExtractorBlockEntity.scheduledServerTick(level, pos, state, extractor);
+			if (nextDelay > 0) {
+				scheduleExtractorTick(level, pos, this, nextDelay);
+			}
+		}
 	}
 
 	@Override

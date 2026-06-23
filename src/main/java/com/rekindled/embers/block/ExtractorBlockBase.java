@@ -1,10 +1,12 @@
 package com.rekindled.embers.block;
 
 import com.rekindled.embers.blockentity.PipeBlockEntityBase;
+import com.rekindled.embers.blockentity.PipeNetworkUtil;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,6 +16,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public abstract class ExtractorBlockBase extends PipeBlockBase {
 
+	public static final int WORK_TICK_INTERVAL = 8;
+	public static final int IDLE_TICK_INTERVAL = 40;
 	public static final VoxelShape EXTRACTOR_AABB = Block.box(5,5,5,11,11,11);
 	public static final VoxelShape[] EXTRACTOR_SHAPES = new VoxelShape[729];
 
@@ -28,6 +32,28 @@ public abstract class ExtractorBlockBase extends PipeBlockBase {
 	@Override
 	public VoxelShape getCenterShape() {
 		return EXTRACTOR_AABB;
+	}
+
+	public static void scheduleExtractorTick(Level level, BlockPos pos, Block block, int delay) {
+		if (!level.isClientSide) {
+			level.scheduleTick(pos, block, Math.max(1, delay));
+		}
+	}
+
+	@Override
+	protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
+		super.onPlace(state, level, pos, oldState, isMoving);
+		if (!state.is(oldState.getBlock())) {
+			PipeNetworkUtil.invalidateCaches();
+			scheduleExtractorTick(level, pos, this, 1);
+		}
+	}
+
+	@Override
+	protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+		super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+		PipeNetworkUtil.invalidateCaches();
+		scheduleExtractorTick(level, pos, this, 1);
 	}
 
 	@Override

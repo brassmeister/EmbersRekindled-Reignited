@@ -7,7 +7,9 @@ import com.rekindled.embers.datagen.EmbersBlockTags;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
@@ -32,7 +34,17 @@ public class FluidExtractorBlock extends ExtractorBlockBase {
 
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pBlockEntityType) {
-		return pLevel.isClientSide ? createTickerHelper(pBlockEntityType, RegistryManager.FLUID_EXTRACTOR_ENTITY.get(), FluidExtractorBlockEntity::clientTick) : createTickerHelper(pBlockEntityType, RegistryManager.FLUID_EXTRACTOR_ENTITY.get(), FluidExtractorBlockEntity::serverTick);
+		return pLevel.isClientSide ? createTickerHelper(pBlockEntityType, RegistryManager.FLUID_EXTRACTOR_ENTITY.get(), FluidExtractorBlockEntity::clientTick) : null;
+	}
+
+	@Override
+	protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+		if (level.getBlockEntity(pos) instanceof FluidExtractorBlockEntity extractor) {
+			int nextDelay = FluidExtractorBlockEntity.scheduledServerTick(level, pos, state, extractor);
+			if (nextDelay > 0) {
+				scheduleExtractorTick(level, pos, this, nextDelay);
+			}
+		}
 	}
 
 	@Override

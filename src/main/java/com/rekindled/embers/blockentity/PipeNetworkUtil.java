@@ -6,7 +6,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import javax.annotation.Nullable;
 
@@ -28,8 +30,19 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 public final class PipeNetworkUtil {
 	private static final int MAX_VISITED_PIPES = 4096;
+	private static final Map<PipeBlockEntityBase, RouteCache> ROUTE_CACHES = new WeakHashMap<>();
+	private static long cacheEpoch;
 
 	private PipeNetworkUtil() {
+	}
+
+	public static void invalidateCaches() {
+		cacheEpoch++;
+		ROUTE_CACHES.clear();
+	}
+
+	public static long getCacheEpoch() {
+		return cacheEpoch;
 	}
 
 	public static ItemStack routeItem(ItemPipeBlockEntityBase origin, @Nullable Direction blockedFirstSide, ItemStack stack, boolean simulate) {
@@ -91,29 +104,51 @@ public final class PipeNetworkUtil {
 	}
 
 	private static List<ItemTarget> findItemTargets(ItemPipeBlockEntityBase origin, @Nullable Direction blockedFirstSide) {
+		RouteCache cache = cacheFor(origin);
+		if (cache.itemEpoch == cacheEpoch && cache.itemBlockedFirstSide == blockedFirstSide && cache.itemTargets != null) {
+			return cache.itemTargets;
+		}
 		ArrayList<ItemTarget> targets = new ArrayList<>();
 		walk(origin, blockedFirstSide, ItemPipeBlockEntityBase.class, (pipe, direction, path) -> {
 			BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
 			IItemHandler handler = getAdjacentItemHandler(pipe, direction, neighbor);
 			if (handler != null) {
-				targets.add(new ItemTarget(handler, priority(neighbor, direction.getOpposite()), path));
+				targets.add(new ItemTarget(handler, priority(neighbor, direction.getOpposite()), List.copyOf(path)));
 			}
 		});
 		targets.sort(Comparator.comparingInt(ItemTarget::priority).thenComparingInt(target -> target.path().size()));
-		return targets;
+		List<ItemTarget> result = List.copyOf(targets);
+		cache = cacheFor(origin);
+		cache.itemEpoch = cacheEpoch;
+		cache.itemBlockedFirstSide = blockedFirstSide;
+		cache.itemTargets = result;
+		return result;
 	}
 
 	private static List<FluidTarget> findFluidTargets(FluidPipeBlockEntityBase origin, @Nullable Direction blockedFirstSide) {
+		RouteCache cache = cacheFor(origin);
+		if (cache.fluidEpoch == cacheEpoch && cache.fluidBlockedFirstSide == blockedFirstSide && cache.fluidTargets != null) {
+			return cache.fluidTargets;
+		}
 		ArrayList<FluidTarget> targets = new ArrayList<>();
 		walk(origin, blockedFirstSide, FluidPipeBlockEntityBase.class, (pipe, direction, path) -> {
 			BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
 			IFluidHandler handler = getAdjacentFluidHandler(pipe, direction, neighbor);
 			if (handler != null) {
-				targets.add(new FluidTarget(handler, priority(neighbor, direction.getOpposite()), path));
+				targets.add(new FluidTarget(handler, priority(neighbor, direction.getOpposite()), List.copyOf(path)));
 			}
 		});
 		targets.sort(Comparator.comparingInt(FluidTarget::priority).thenComparingInt(target -> target.path().size()));
-		return targets;
+		List<FluidTarget> result = List.copyOf(targets);
+		cache = cacheFor(origin);
+		cache.fluidEpoch = cacheEpoch;
+		cache.fluidBlockedFirstSide = blockedFirstSide;
+		cache.fluidTargets = result;
+		return result;
+	}
+
+	private static RouteCache cacheFor(PipeBlockEntityBase origin) {
+		return ROUTE_CACHES.computeIfAbsent(origin, ignored -> new RouteCache());
 	}
 
 	private static void walk(PipeBlockEntityBase origin, @Nullable Direction blockedFirstSide, Class<? extends PipeBlockEntityBase> pipeType, EndpointVisitor visitor) {
@@ -130,6 +165,9 @@ public final class PipeNetworkUtil {
 					continue;
 				}
 				if (!canUseAdjacentSide(pipe, direction, pipeType)) {
+					continue;
+				}
+				if (!canRouteOutOfSide(pipe, direction)) {
 					continue;
 				}
 				BlockEntity neighbor = SubLevelCompat.findAdjacent(pipe, direction);
@@ -181,6 +219,13 @@ public final class PipeNetworkUtil {
 		return false;
 	}
 
+	private static boolean canRouteOutOfSide(PipeBlockEntityBase pipe, Direction direction) {
+		if (!isPoweredExtractor(pipe)) {
+			return true;
+		}
+		return pipe.getConnection(direction) != PipeBlockEntityBase.PipeConnection.END;
+	}
+
 	private static IItemHandler getAdjacentItemHandler(PipeBlockEntityBase pipe, Direction direction, @Nullable BlockEntity neighbor) {
 		if (neighbor instanceof ItemPipeBlockEntityBase) {
 			return null;
@@ -220,13 +265,13 @@ public final class PipeNetworkUtil {
 	}
 
 	private static boolean canTraverse(PipeBlockEntityBase origin, PipeBlockEntityBase nextPipe) {
-		if (nextPipe == origin || nextPipe.getLevel() == null) {
-			return true;
-		}
-		if (nextPipe instanceof ItemExtractorBlockEntity || nextPipe instanceof FluidExtractorBlockEntity) {
-			return !ConfigManager.isRedstoneControlActive(nextPipe.getLevel(), nextPipe.getBlockPos());
-		}
-		return true;
+		return nextPipe == origin || nextPipe.getLevel() != null;
+	}
+
+	private static boolean isPoweredExtractor(PipeBlockEntityBase pipe) {
+		return (pipe instanceof ItemExtractorBlockEntity || pipe instanceof FluidExtractorBlockEntity)
+				&& pipe.getLevel() != null
+				&& ConfigManager.isRedstoneControlActive(pipe.getLevel(), pipe.getBlockPos());
 	}
 
 	private static int priority(@Nullable BlockEntity blockEntity, Direction side) {
@@ -280,5 +325,14 @@ public final class PipeNetworkUtil {
 	}
 
 	private record FluidTarget(IFluidHandler handler, int priority, List<PipeStep> path) {
+	}
+
+	private static final class RouteCache {
+		private long itemEpoch = Long.MIN_VALUE;
+		private Direction itemBlockedFirstSide;
+		private List<ItemTarget> itemTargets;
+		private long fluidEpoch = Long.MIN_VALUE;
+		private Direction fluidBlockedFirstSide;
+		private List<FluidTarget> fluidTargets;
 	}
 }
