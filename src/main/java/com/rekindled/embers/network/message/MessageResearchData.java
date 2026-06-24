@@ -12,14 +12,14 @@ import net.minecraft.network.protocol.PacketFlow;
 
 public class MessageResearchData {
 	public static final int NAME_MAX_LENGTH = 64;
-	Map<ResourceLocation, Boolean> ticks;
+	private final Map<ResourceLocation, Boolean> ticks;
 
 	public MessageResearchData() {
 		this.ticks = new HashMap<>();
 	}
 
 	public MessageResearchData(Map<ResourceLocation, Boolean> ticks) {
-		this.ticks = ticks;
+		this.ticks = new HashMap<>(ticks);
 	}
 
 	public static void encode(MessageResearchData msg, FriendlyByteBuf buf) {

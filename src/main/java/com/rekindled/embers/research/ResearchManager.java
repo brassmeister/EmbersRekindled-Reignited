@@ -111,9 +111,7 @@ public class ResearchManager {
 
 	public static void receiveResearchData(Map<ResourceLocation, Boolean> checkmarks) {
 		for (ResearchBase research : getAllResearch()) {
-			Boolean checked = checkmarks.get(research.id);
-			if (checked != null)
-				research.check(checked);
+			research.check(Boolean.TRUE.equals(checkmarks.get(research.id)));
 		}
 	}
 
