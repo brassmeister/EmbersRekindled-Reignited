@@ -28,6 +28,8 @@ public class ConfigManager {
 	public static ConfigValue<Double> MINI_BOILER_HEAT_MULTIPLIER;
 	public static ConfigValue<Boolean> MINI_BOILER_CAN_EXPLODE;
 	public static ConfigValue<Integer> INJECTOR_MAX_DISTANCE;
+	public static ConfigValue<Boolean> ALCHEMY_RANDOMIZE_ASPECTUS;
+	public static ConfigValue<Boolean> ALCHEMY_CONSUME_ITEMS_ON_FAILURE;
 	public static ConfigValue<Boolean> CRYSTAL_SEED_USE_EXPERIMENTAL_SCALING;
 	public static ConfigValue<Double> CRYSTAL_SEED_LEVEL_BONUS_SCALAR;
 	public static ConfigValue<Integer> MELTER_PROCESS_TIME;
@@ -101,6 +103,14 @@ public class ConfigManager {
 		return REDSTONE_CONTROL_INVERTED != null && REDSTONE_CONTROL_INVERTED.get() ? !powered : powered;
 	}
 
+	public static boolean randomizeAlchemyAspectus() {
+		return ALCHEMY_RANDOMIZE_ASPECTUS == null || ALCHEMY_RANDOMIZE_ASPECTUS.get();
+	}
+
+	public static boolean consumeAlchemyItemsOnFailure() {
+		return ALCHEMY_CONSUME_ITEMS_ON_FAILURE == null || ALCHEMY_CONSUME_ITEMS_ON_FAILURE.get();
+	}
+
 	public static void register(ModContainer container) {
 		registerClientConfigs(container);
 		registerCommonConfigs(container);
@@ -163,6 +173,8 @@ public class ConfigManager {
 		FLUID_VESSEL_CAPACITY = COMMON.comment("How much fluid (in mb) fits into the Fluid Vessel.").define("fluidVessel.capacity", FluidType.BUCKET_VOLUME * 16);
 
 		INJECTOR_MAX_DISTANCE = COMMON.comment("The maximum distance that Ember Injectors can be placed from a crystal seed.").define("ember_injector.max_distance", 1);
+		ALCHEMY_RANDOMIZE_ASPECTUS = COMMON.comment("If true, alchemy recipes choose hidden aspectus requirements from the recipe's aspectus pool using the world seed. If false, recipes use their listed aspectus order and JEI shows the exact pedestal positions.").define("alchemy.randomize_aspectus", true);
+		ALCHEMY_CONSUME_ITEMS_ON_FAILURE = COMMON.comment("If true, failed alchemy consumes pedestal input items. If false, failed alchemy only consumes the Exchange Tablet item and turns it into the failure result.").define("alchemy.consume_items_on_failure", true);
 		CRYSTAL_SEED_USE_EXPERIMENTAL_SCALING = COMMON.comment("If true, crystal seeds use square-root level scaling for extra nugget drop roll segments instead of the original stepped scaling.").define("crystal_seed.use_experimental_scaling", true);
 		CRYSTAL_SEED_LEVEL_BONUS_SCALAR = COMMON.comment("Multiplier used by experimental crystal seed scaling. Extra roll segments are floor(sqrt(level * scalar)).").defineInRange("crystal_seed.level_bonus_scalar", 2.0, 0.0, 1024.0);
 

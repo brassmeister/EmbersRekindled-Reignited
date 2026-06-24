@@ -741,6 +741,9 @@
   "embers.configuration.charger.transfer": "Copper Charger Transfer Rate",
   "embers.configuration.fluidVessel.capacity": "Fluid Vessel Capacity",
   "embers.configuration.ember_injector.max_distance": "Ember Injector Max Distance",
+  "embers.configuration.alchemy": "Alchemy",
+  "embers.configuration.alchemy.randomize_aspectus": "Randomize Alchemy Aspectus",
+  "embers.configuration.alchemy.consume_items_on_failure": "Consume Alchemy Items on Failure",
   "embers.configuration.hearth_coil.ember_cost": "Hearth Coil Ember Cost",
   "embers.configuration.hearth_coil.heating_speed": "Hearth Coil Heating Speed",
   "embers.configuration.hearth_coil.cooling_speed": "Hearth Coil Cooling Speed",
@@ -1498,5 +1501,8 @@
   "embers.configuration.gem_slots": "Gem Slots",
   "embers.configuration.damagePasses": "Damage Passes",
   "embers.configuration.damageRates": "Damage Rates",
-  "embers.configuration.inverted_controls": "Inverted"
+  "embers.configuration.inverted_controls": "Inverted",
+  "embers.configuration.crystal_seed": "Metal Seeds",
+  "embers.configuration.randomize_aspectus": "Randomize Aspectus",
+  "embers.configuration.consume_items_on_failure": "Consume Items on Failure"
 }

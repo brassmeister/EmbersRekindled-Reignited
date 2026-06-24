@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.RegistryManager;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -30,6 +31,9 @@ public class AlchemyRecipeForBabies extends AlchemyRecipeBase {
 
 	@Override
 	public ArrayList<Ingredient> getCode(long seed) {
+		if (!ConfigManager.randomizeAlchemyAspectus()) {
+			return super.getCode(seed);
+		}
 		if (cachedSeed == null || cachedSeed != seed) {
 			int incr = 0;
 			boolean incorrectCode = true;

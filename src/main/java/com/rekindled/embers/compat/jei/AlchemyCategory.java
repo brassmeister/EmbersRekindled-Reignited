@@ -1,5 +1,8 @@
 package com.rekindled.embers.compat.jei;
 
+import java.util.List;
+
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.recipe.IAlchemyRecipe;
@@ -62,11 +65,16 @@ public class AlchemyCategory implements IRecipeCategory<IAlchemyRecipe> {
 
 		int aspecti = recipe.getAspects().size();
 		int inputs = recipe.getInputs().size();
+		boolean randomizeAspectus = ConfigManager.randomizeAlchemyAspectus();
+		List<Ingredient> exactAspectus = randomizeAspectus ? List.of() : recipe.getCode(0L);
 
-		Ingredient[][] aspectusCombinations = new Ingredient[inputs][(int) Math.pow(aspecti, inputs)];
-		for (int i = 0; i < inputs; i++) {
-			for (int j = 0; j < ((int) Math.pow(aspecti, inputs)); j++) {
-				aspectusCombinations[i][j] = recipe.getAspects().get((j / ((int) Math.pow(aspecti, i))) % aspecti);
+		Ingredient[][] aspectusCombinations = new Ingredient[0][0];
+		if (randomizeAspectus) {
+			aspectusCombinations = new Ingredient[inputs][(int) Math.pow(aspecti, inputs)];
+			for (int i = 0; i < inputs; i++) {
+				for (int j = 0; j < ((int) Math.pow(aspecti, inputs)); j++) {
+					aspectusCombinations[i][j] = recipe.getAspects().get((j / ((int) Math.pow(aspecti, i))) % aspecti);
+				}
 			}
 		}
 
@@ -74,10 +82,13 @@ public class AlchemyCategory implements IRecipeCategory<IAlchemyRecipe> {
 			Vec3 rotated = center.zRot((float) (i * 2.0 * Math.PI / recipe.getInputs().size()));
 			builder.addSlot(RecipeIngredientRole.INPUT, (int) (32 + rotated.x()), (int) (29 + rotated.y())).addIngredients(recipe.getInputs().get(i));
 
-			builder.addSlot(RecipeIngredientRole.CATALYST, (int) (32 + rotated.x()), (int) (45 + rotated.y())).addIngredients(CompoundIngredient.of(aspectusCombinations[i])).setBackground(pillar, 0, 0);
+			Ingredient aspectus = randomizeAspectus ? CompoundIngredient.of(aspectusCombinations[i]) : exactAspectus.get(i);
+			builder.addSlot(RecipeIngredientRole.CATALYST, (int) (32 + rotated.x()), (int) (45 + rotated.y())).addIngredients(aspectus).setBackground(pillar, 0, 0);
 		}
-		for (int i = 0; i < aspecti; i++) {
-			builder.addSlot(RecipeIngredientRole.CATALYST, 63 - 8 * recipe.getAspects().size() + 16 * i, 90).addIngredients(recipe.getAspects().get(i));
+		if (randomizeAspectus) {
+			for (int i = 0; i < aspecti; i++) {
+				builder.addSlot(RecipeIngredientRole.CATALYST, 63 - 8 * recipe.getAspects().size() + 16 * i, 90).addIngredients(recipe.getAspects().get(i));
+			}
 		}
 	}
 }

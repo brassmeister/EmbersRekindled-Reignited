@@ -1,12 +1,12 @@
 package com.rekindled.embers.recipe;
 
-import com.rekindled.embers.util.ItemData;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.api.misc.AlchemyResult;
+import com.rekindled.embers.util.ItemData;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -28,6 +28,7 @@ public abstract class AlchemyRecipeBase implements IAlchemyRecipe {
 	public final ItemStack failure;
 
 	public Long cachedSeed = null;
+	public Boolean cachedRandomization = null;
 	public ArrayList<Ingredient> code = new ArrayList<Ingredient>();
 
 	public AlchemyRecipeBase(ResourceLocation id, Ingredient tablet, ArrayList<Ingredient> aspects, ArrayList<Ingredient> inputs, ItemStack output, ItemStack failure) {
@@ -41,13 +42,23 @@ public abstract class AlchemyRecipeBase implements IAlchemyRecipe {
 
 	@Override
 	public ArrayList<Ingredient> getCode(long seed) {
-		if (cachedSeed == null || cachedSeed != seed) {
+		boolean randomizeAspectus = ConfigManager.randomizeAlchemyAspectus();
+		if (cachedSeed == null || cachedSeed != seed || cachedRandomization == null || cachedRandomization != randomizeAspectus) {
 			code.clear();
-			Random rand = new Random(seed - id.getPath().hashCode());
-			for (int i = 0; i < inputs.size(); i++) {
-				code.add(aspects.get(rand.nextInt(aspects.size())));
+			if (!aspects.isEmpty()) {
+				if (randomizeAspectus) {
+					Random rand = new Random(seed - id.getPath().hashCode());
+					for (int i = 0; i < inputs.size(); i++) {
+						code.add(aspects.get(rand.nextInt(aspects.size())));
+					}
+				} else {
+					for (int i = 0; i < inputs.size(); i++) {
+						code.add(aspects.get(i % aspects.size()));
+					}
+				}
 			}
 			cachedSeed = seed;
+			cachedRandomization = randomizeAspectus;
 		}
 		return code;
 	}

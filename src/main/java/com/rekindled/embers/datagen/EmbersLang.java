@@ -1151,6 +1151,9 @@ public class EmbersLang extends LanguageProvider {
 		addConfigLabel("charger.transfer", "Copper Charger Transfer Rate");
 		addConfigLabel("fluidVessel.capacity", "Fluid Vessel Capacity");
 		addConfigLabel("ember_injector.max_distance", "Ember Injector Max Distance");
+		addConfigLabel("alchemy", "Alchemy");
+		addConfigLabel("alchemy.randomize_aspectus", "Randomize Alchemy Aspectus");
+		addConfigLabel("alchemy.consume_items_on_failure", "Consume Alchemy Items on Failure");
 		addConfigLabel("hearth_coil.ember_cost", "Hearth Coil Ember Cost");
 		addConfigLabel("hearth_coil.heating_speed", "Hearth Coil Heating Speed");
 		addConfigLabel("hearth_coil.cooling_speed", "Hearth Coil Cooling Speed");

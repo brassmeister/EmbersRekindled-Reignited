@@ -7,6 +7,7 @@ import java.util.Random;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.rekindled.embers.ConfigManager;
 import com.rekindled.embers.Embers;
 import com.rekindled.embers.RegistryManager;
 import com.rekindled.embers.api.event.AlchemyResultEvent;
@@ -222,7 +223,7 @@ public class AlchemyTabletBlockEntity extends BlockEntity implements ISparkable,
 							for (AlchemyPedestalTopBlockEntity pedestal : pedestals) {
 								pedestal.inventory.setStackInSlot(0, ItemStack.EMPTY);
 							}
-						} else {
+						} else if (ConfigManager.consumeAlchemyItemsOnFailure()) {
 							//this doesn't always consume the same amount of ingredients
 							//there is a chance the same pedestal gets cleared multiple times
 							for (int i = 0; i < event.getConsumeAmount(); i++) {
