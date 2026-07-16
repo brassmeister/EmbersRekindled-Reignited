@@ -1165,6 +1165,9 @@ public class EmbersLang extends LanguageProvider {
 		addConfigLabel("create.blaze_burner.ember_cost", "Create Blaze Burner Ember Cost");
 		addConfigLabel("create.blaze_burner.superheat_cost", "Create Blaze Burner Superheat Cost");
 		addConfigLabel("dawnstone_anvil.max_hits", "Dawnstone Anvil Max Hits");
+		addConfigLabel("dawnstone_tools", "Dawnstone Tools");
+		addConfigLabel("dawnstone_tools.use_durability", "Use Durability");
+		add(Embers.MODID + ".configuration.dawnstone_tools.use_durability.tooltip", "Makes Dawnstone tools use normal durability instead of consuming Ember from jars and cartridges. Damaged tools can be repaired with Dawnstone ingots on a Dawnstone Anvil.");
 		addConfigLabel("blazingRay.cost", "Blazing Ray Ember Cost");
 		addConfigLabel("blazingRay.cooldown", "Blazing Ray Cooldown");
 		addConfigLabel("blazingRay.charge", "Blazing Ray Max Charge Time");

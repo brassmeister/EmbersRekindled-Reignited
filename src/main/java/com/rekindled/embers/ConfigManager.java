@@ -49,6 +49,7 @@ public class ConfigManager {
 	public static ConfigValue<Double> CREATE_BLAZE_BURNER_SUPERHEAT_COST;
 	public static ConfigValue<Boolean> ENABLE_EXPERIMENTAL_CREATE_MECHANICS;
 	public static ConfigValue<Integer> DAWNSTONE_ANVIL_MAX_HITS;
+	public static ConfigValue<Boolean> DAWNSTONE_TOOLS_USE_DURABILITY;
 	public static ConfigValue<Double> BLAZING_RAY_COST;
 	public static ConfigValue<Integer> BLAZING_RAY_COOLDOWN;
 	public static ConfigValue<Integer> BLAZING_RAY_MAX_CHARGE;
@@ -191,6 +192,10 @@ public class ConfigManager {
 		ENABLE_EXPERIMENTAL_CREATE_MECHANICS = COMMON.comment("Enables experimental Create-powered Embers machine upgrades and their recipes. Requires Create to be installed.").define("create.enable_experimental_create_mechanics", true);
 
 		DAWNSTONE_ANVIL_MAX_HITS = COMMON.comment("The amount of hits required to perform one recipe on a dawnstone anvil.").define("dawnstone_anvil.max_hits", 40);
+		DAWNSTONE_TOOLS_USE_DURABILITY = COMMON
+				.comment("If true, Dawnstone tools use normal durability instead of consuming Ember from jars and cartridges.")
+				.translation(Embers.MODID + ".configuration.dawnstone_tools.use_durability")
+				.define("dawnstone_tools.use_durability", false);
 
 		BLAZING_RAY_COST = COMMON.comment("Ember used up by each shot.").define("blazingRay.cost", 25.0);
 		BLAZING_RAY_COOLDOWN = COMMON.comment("Cooldown in ticks between each shot.").define("blazingRay.cooldown", 10);
